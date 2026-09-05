@@ -27,8 +27,9 @@ namespace NovelForge.Runtime
         {
             int before = _pointer.Current;
             Command command = _script.Commands[before];
+            _pointer.ResetMoved();
             yield return command.Execute(_context, _pointer);
-            if (_pointer.Current == before)
+            if (!_pointer.Moved)
                 _pointer.Current = before + 1;
         }
     }

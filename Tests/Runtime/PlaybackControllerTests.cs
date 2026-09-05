@@ -56,6 +56,28 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void RunAll_SelfTargetingJump_ReExecutesUntilConditionChanges()
+        {
+            int iterations = 0;
+            var commands = new Command[]
+            {
+                new RecordingPointerCommand(p =>
+                {
+                    iterations++;
+                    if (iterations < 3)
+                        p.Current = 0; // self-jump: same index, should NOT auto-advance
+                }),
+            };
+            var script = new NovelScript(commands, new Dictionary<string, int>());
+            var controller = new PlaybackController(script, new StoryContext());
+
+            CoroutineTestUtil.RunToCompletion(controller.RunAll());
+
+            Assert.AreEqual(3, iterations);
+            Assert.IsTrue(controller.IsFinished);
+        }
+
+        [Test]
         public void PushAndTryPop_SupportGosubReturnStack()
         {
             var commands = new Command[]

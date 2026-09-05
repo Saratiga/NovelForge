@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -52,7 +53,20 @@ namespace NovelForge.Runtime
                 };
             }
 
-            float currentNumber = variables.GetFloat(_variableName);
+            float currentNumber;
+            try
+            {
+                currentNumber = variables.GetFloat(_variableName);
+            }
+            catch (FormatException)
+            {
+                // The literal being compared against is numeric, but the variable itself
+                // holds something GetFloat can't convert (e.g. a string) — a one-token
+                // authoring mistake like `if playerName > 3` against a string variable.
+                // Treat as false rather than letting the conversion crash playback.
+                Debug.LogError($"NovelForge: '{_variableName}' is not numeric — condition treated as false.");
+                return false;
+            }
             float compareNumber = Convert.ToSingle(_value);
             return _op switch
             {

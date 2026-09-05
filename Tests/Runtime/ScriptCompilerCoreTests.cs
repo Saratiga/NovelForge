@@ -112,5 +112,12 @@ namespace NovelForge.Runtime.Tests
             var script = Compile("label a\n\n// a comment\n\njump a\n");
             Assert.AreEqual(1, script.Commands.Count);
         }
+
+        [Test]
+        public void GenericCommand_wait_WithMalformedArgument_ThrowsParseExceptionWithLineNumber()
+        {
+            var ex = Assert.Throws<ParseException>(() => Compile("wait abc\n"));
+            Assert.AreEqual(1, ex.LineNumber);
+        }
     }
 }

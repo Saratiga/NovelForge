@@ -19,6 +19,13 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Choices == null)
+            {
+                Debug.LogError("NovelForge: no IChoicePresenter wired — defaulting to option 0.");
+                pointer.Current = _targetIndices[0];
+                yield break;
+            }
+
             int selected = -1;
             yield return context.Choices.PresentChoices(_optionTexts, i => selected = i);
 

@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -10,6 +11,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Backgrounds == null)
+            {
+                Debug.LogError("NovelForge: no IBackgroundPresenter wired — skipping background change.");
+                yield break;
+            }
             yield return context.Backgrounds.ShowBackground(_backgroundId);
         }
     }

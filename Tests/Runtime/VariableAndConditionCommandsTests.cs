@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace NovelForge.Runtime.Tests
 {
@@ -104,6 +106,20 @@ namespace NovelForge.Runtime.Tests
 
             Assert.Throws<System.InvalidOperationException>(() =>
                 CoroutineTestUtil.RunToCompletion(command.Execute(context, pointer)));
+        }
+
+        [Test]
+        public void ConditionalJump_NumericComparisonAgainstStringVariable_LogsErrorAndTreatsAsFalse()
+        {
+            var context = new StoryContext();
+            context.Variables.Set("playerName", "Kai");
+            var pointer = new StoryPointer { Current = 0 };
+            var command = new ConditionalJumpCommand("playerName", ComparisonOperator.GreaterThan, 3, falseTargetIndex: 10);
+
+            LogAssert.Expect(LogType.Error, "NovelForge: 'playerName' is not numeric — condition treated as false.");
+            CoroutineTestUtil.RunToCompletion(command.Execute(context, pointer));
+
+            Assert.AreEqual(10, pointer.Current);
         }
     }
 }

@@ -183,8 +183,19 @@ namespace NovelForge.Runtime
                 int spaceIndex = line.IndexOf(' ');
                 string commandName = spaceIndex < 0 ? line : line.Substring(0, spaceIndex);
                 string rawArgs = spaceIndex < 0 ? string.Empty : line.Substring(spaceIndex + 1);
-                if (!_registry.TryCreate(commandName, rawArgs, out Command generic))
-                    throw new ParseException(lineNumber, $"Unknown command '{commandName}'.");
+                Command generic;
+                try
+                {
+                    if (!_registry.TryCreate(commandName, rawArgs, out generic))
+                        throw new ParseException(lineNumber, $"Unknown command '{commandName}'.");
+                }
+                catch (Exception e) when (e is not ParseException)
+                {
+                    // A registered factory (e.g. "wait"'s float.Parse) can throw its own
+                    // exception type on bad arguments — re-raise as a located ParseException
+                    // so every parse failure, built-in or custom, carries a line number.
+                    throw new ParseException(lineNumber, $"Command '{commandName}' rejected arguments '{rawArgs}': {e.Message}");
+                }
                 commands.Add(Attach(generic, ref pendingComment));
             }
 

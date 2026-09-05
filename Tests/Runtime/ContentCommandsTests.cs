@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace NovelForge.Runtime.Tests
 {
@@ -75,6 +77,66 @@ namespace NovelForge.Runtime.Tests
             CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer()));
 
             CollectionAssert.AreEqual(new[] { 1.5f }, timing.Calls);
+        }
+
+        [Test]
+        public void SayLine_NullDialoguePresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new SayLineCommand("Alice", "Привет!", "happy", "left");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IDialoguePresenter wired — skipping dialogue line.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void PlayMusic_NullAudioPresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new PlayMusicCommand("theme_calm");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IAudioPresenter wired — skipping music.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void PlaySfx_NullAudioPresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new PlaySfxCommand("door_open");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IAudioPresenter wired — skipping sfx.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void ShowBackground_NullBackgroundPresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new ShowBackgroundCommand("park_day");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IBackgroundPresenter wired — skipping background change.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void ShowCg_NullBackgroundPresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new ShowCgCommand("intro_cg");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IBackgroundPresenter wired — skipping CG.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void Wait_NullTimingPresenter_LogsErrorAndDoesNotThrow()
+        {
+            var context = new StoryContext();
+            var command = new WaitCommand(1.5f);
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no ITimingPresenter wired — skipping wait.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
         }
     }
 }

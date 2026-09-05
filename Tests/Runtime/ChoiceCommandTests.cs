@@ -36,5 +36,19 @@ namespace NovelForge.Runtime.Tests
 
             Assert.AreEqual(10, pointer.Current);
         }
+
+        [Test]
+        public void Execute_NullChoicePresenter_LogsErrorAndDefaultsToOptionZero()
+        {
+            var context = new StoryContext();
+            var command = new ChoiceCommand(new[] { "Only option" }, optionCount: 1);
+            command.ResolveTarget(0, 10);
+            var pointer = new StoryPointer();
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no IChoicePresenter wired — defaulting to option 0.");
+            CoroutineTestUtil.RunToCompletion(command.Execute(context, pointer));
+
+            Assert.AreEqual(10, pointer.Current);
+        }
     }
 }

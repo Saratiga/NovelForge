@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -19,6 +20,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Dialogue == null)
+            {
+                Debug.LogError("NovelForge: no IDialoguePresenter wired — skipping dialogue line.");
+                yield break;
+            }
             yield return context.Dialogue.ShowLine(_characterId, _text, _emotion, _position);
         }
     }
