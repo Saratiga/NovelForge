@@ -713,9 +713,9 @@ namespace NovelForge.Runtime.Tests
         {
             var commands = new Command[]
             {
-                new RecordingPointerCommand(p => { p.Push(1); p.Current = 2; }),
-                new RecordingPointerCommand(p => { }),
+                new RecordingPointerCommand(p => { p.Push(2); p.Current = 1; }),
                 new RecordingPointerCommand(p => { p.TryPop(out int ret); p.Current = ret; }),
+                new RecordingPointerCommand(p => { }),
             };
             var script = new NovelScript(commands, new Dictionary<string, int>());
             var controller = new PlaybackController(script, new StoryContext());
@@ -727,6 +727,8 @@ namespace NovelForge.Runtime.Tests
     }
 }
 ```
+
+Trace for `PushAndTryPop_SupportGosubReturnStack`: index 0 pushes return-index 2 and jumps to 1 (no auto-increment, pointer moved); index 1 pops (gets 2) and jumps there (no auto-increment); index 2 is a no-op, so its pointer is unchanged and it auto-increments to 3 — `IsFinished` (3 >= `Commands.Count` == 3). Terminates in a single pass. (An earlier version of this test revisited index 2 a second time after the stack was already empty, so `TryPop` silently returned the default `0` and sent the pointer back to 0 — a real infinite loop, only visible once the VM actually executes rather than just compiles. Caught during Task 3's execution; if you're implementing this from an older copy of the plan, use the sequence above.)
 
 - [ ] **Step 7: Run test to verify it fails**
 
