@@ -10,6 +10,7 @@ namespace NovelForge.Runtime
         private static readonly Regex DialogueLine = new(@"^([A-Za-z_][A-Za-z0-9_]*):\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex SetLine = new(@"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|\+=|-=)\s*(.+)$", RegexOptions.Compiled);
         private static readonly Regex IfLine = new(@"^if\s+([A-Za-z_][A-Za-z0-9_]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$", RegexOptions.Compiled);
+        private static readonly Regex ChoiceOptionLine = new(@"^""([^""]*)""\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
 
         private readonly CommandRegistry _registry;
 
@@ -108,6 +109,39 @@ namespace NovelForge.Runtime
                     var cmd = new ConditionalJumpCommand(varName, op, value, -1);
                     blockStack.Push(new PendingBlock { Kind = BlockKind.If, IfCommand = cmd });
                     commands.Add(Attach(cmd, ref pendingComment));
+                    continue;
+                }
+
+                if (line == "choice")
+                {
+                    var options = new List<(string text, string labelName)>();
+                    int lookahead = lineNumber;
+                    while (lookahead < lines.Length)
+                    {
+                        string nextLine = lines[lookahead].Trim();
+                        if (nextLine.Length == 0 || nextLine.StartsWith("//"))
+                        {
+                            lookahead++;
+                            continue;
+                        }
+                        var optionMatch = ChoiceOptionLine.Match(nextLine);
+                        if (!optionMatch.Success)
+                            break;
+                        options.Add((optionMatch.Groups[1].Value, optionMatch.Groups[2].Value));
+                        lookahead++;
+                    }
+                    if (options.Count == 0)
+                        throw new ParseException(lineNumber, "'choice' has no options.");
+
+                    var choiceCommand = new ChoiceCommand(options.ConvertAll(o => o.text), options.Count);
+                    for (int i = 0; i < options.Count; i++)
+                        pendingLabelRefs.Add((commands.Count, options[i].labelName, i, lineNumber));
+                    commands.Add(Attach(choiceCommand, ref pendingComment));
+
+                    // lines[lineNumber .. lookahead-1] (0-indexed) were option lines already consumed;
+                    // jump the 1-based cursor to lookahead so the next loop iteration (which does
+                    // lineNumber++) resumes at lines[lookahead], the first unconsumed line.
+                    lineNumber = lookahead;
                     continue;
                 }
 
