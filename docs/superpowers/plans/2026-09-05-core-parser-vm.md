@@ -14,18 +14,19 @@
 
 - Unity Editor version: **6000.6.0f1**, installed via Unity Hub at `C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe` (adjust only if Hub installed it elsewhere).
 - Package id: `com.novelforge.core`, display name `NovelForge`, package root `G:\ClaudeProjects\NovelForge`.
+- The companion `TestProject~` (used only to run EditMode tests against the package locally) is named with a trailing `~` deliberately: Unity's Package Manager and AssetDatabase ignore any folder ending in `~` when scanning a package's content. Since `TestProject~` lives *inside* the very package it references (`com.novelforge.core` resolves to `file:../..`, i.e. the package root two levels above `TestProject~/Packages/`), naming it without the `~` makes Unity treat the whole nested Unity project — its own `Library/`, `Temp/`, `Packages/`, csproj/sln artifacts — as package content, which causes an endless recompile/domain-reload loop. This was discovered during implementation of Task 1; do not rename it back.
 - This phase is Runtime-only: no `NovelForge.UI` or `NovelForge.Editor` asmdefs yet — those arrive in later phases.
 - Every command's execution touches Unity/game state only through a presenter interface — never directly. This is what keeps the VM unit-testable without Play Mode.
 - Git commit messages end with: `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
 - All EditMode tests run via:
   ```powershell
-  & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject\TestResults.xml" -quit -logFile -
+  & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -quit -logFile -
   ```
-  After each run, read `TestProject\TestResults.xml` and confirm the `<test-run>` root element's `failed` attribute is `"0"` and `passed` matches the expected count for that step. If Unity prompts for license activation on first run, open the Editor once interactively (Unity Hub → NovelForge TestProject) to sign in / activate a free Personal license before relying on batchmode.
+  After each run, read `TestProject~\TestResults.xml` and confirm the `<test-run>` root element's `failed` attribute is `"0"` and `passed` matches the expected count for that step. If Unity prompts for license activation on first run, open the Editor once interactively (Unity Hub → NovelForge TestProject~) to sign in / activate a free Personal license before relying on batchmode.
 
 ---
 
-### Task 1: Package scaffolding + TestProject + smoke test
+### Task 1: Package scaffolding + TestProject~ + smoke test
 
 **Files:**
 - Create: `package.json`
@@ -34,7 +35,7 @@
 - Create: `Runtime/AssemblyInfo.cs`
 - Create: `Tests/Runtime/NovelForge.Runtime.Tests.asmdef`
 - Create: `Tests/Runtime/SmokeTests.cs`
-- Create: `TestProject/` (bootstrapped by Unity, then `TestProject/Packages/manifest.json` edited)
+- Create: `TestProject~/` (bootstrapped by Unity, then `TestProject~/Packages/manifest.json` edited)
 
 **Interfaces:**
 - Produces: an assembly `NovelForge.Runtime` (empty besides `AssemblyInfo.cs`) and `NovelForge.Runtime.Tests` (referencing it), and a working Unity Test Runner CLI pipeline every later task's steps depend on.
@@ -148,17 +149,17 @@ namespace NovelForge.Runtime.Tests
 }
 ```
 
-- [ ] **Step 7: Bootstrap the TestProject**
+- [ ] **Step 7: Bootstrap the TestProject~**
 
 Run:
 ```powershell
-& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -createProject "G:\ClaudeProjects\NovelForge\TestProject" -quit -logFile -
+& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -createProject "G:\ClaudeProjects\NovelForge\TestProject~" -quit -logFile -
 ```
-Expected: exits cleanly, `TestProject\Assets`, `TestProject\Packages\manifest.json` and `TestProject\ProjectSettings` now exist.
+Expected: exits cleanly, `TestProject~\Assets`, `TestProject~\Packages\manifest.json` and `TestProject~\ProjectSettings` now exist.
 
-- [ ] **Step 8: Wire the local package into the TestProject**
+- [ ] **Step 8: Wire the local package into the TestProject~**
 
-Open `TestProject/Packages/manifest.json` and ensure the `dependencies` object contains (add alongside whatever Unity auto-generated; keep the existing `com.unity.modules.*` entries):
+Open `TestProject~/Packages/manifest.json` and ensure the `dependencies` object contains (add alongside whatever Unity auto-generated; keep the existing `com.unity.modules.*` entries):
 
 ```json
 "com.novelforge.core": "file:../..",
@@ -180,18 +181,18 @@ If Package Manager later reports a different resolvable version for `com.unity.t
 
 Run:
 ```powershell
-& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject\TestResults.xml" -quit -logFile -
+& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -quit -logFile -
 ```
-Expected: `TestProject\TestResults.xml` exists, its `<test-run>` root has `total="1" passed="1" failed="0"`. If it instead reports zero tests found, open the project once in the Editor UI and check Window → General → Test Runner → EditMode for compile errors or a package resolution problem before proceeding.
+Expected: `TestProject~\TestResults.xml` exists, its `<test-run>` root has `total="1" passed="1" failed="0"`. If it instead reports zero tests found, open the project once in the Editor UI and check Window → General → Test Runner → EditMode for compile errors or a package resolution problem before proceeding.
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add package.json .gitignore Runtime Tests TestProject/Packages/manifest.json TestProject/ProjectSettings
+git add package.json .gitignore Runtime Tests TestProject~/Packages/manifest.json TestProject~/ProjectSettings
 git commit -m "$(cat <<'EOF'
 Scaffold NovelForge package and EditMode test pipeline
 
-Empty NovelForge.Runtime assembly, a TestProject that references it
+Empty NovelForge.Runtime assembly, a TestProject~ that references it
 as a local UPM package, and one smoke test proving Unity Test Runner
 can build and run tests against the package via CLI.
 
@@ -200,7 +201,7 @@ EOF
 )"
 ```
 
-Note: do not add `TestProject/Library`, `TestProject/Temp`, or `TestProject/Logs` — `.gitignore` excludes them.
+Note: do not add `TestProject~/Library`, `TestProject~/Temp`, or `TestProject~/Logs` — `.gitignore` excludes them.
 
 ---
 
