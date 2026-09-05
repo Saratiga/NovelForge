@@ -18,6 +18,7 @@
 - This phase is Runtime-only: no `NovelForge.UI` or `NovelForge.Editor` asmdefs yet — those arrive in later phases.
 - Every command's execution touches Unity/game state only through a presenter interface — never directly. This is what keeps the VM unit-testable without Play Mode.
 - Git commit messages end with: `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
+- Every `git add` of a specific new `.cs` file must also stage that file's Unity-generated `.meta` companion (`Foo.cs` + `Foo.cs.meta`) — Unity creates one alongside each asset the first time it refreshes, and a fresh clone without it gets a new, different GUID for that script. Tasks 2-5 missed this (their `git add` lines named bare file paths); a backfill commit added the missing `.meta` files after Task 5's review caught it. Tasks 6-10's `git add` lines below already include the `.meta` paths — keep that pattern for any task not listed here too. A `git add` of a whole folder (e.g. `git add Runtime/Parsing`) already recurses into any `.meta` files Unity created under it, so no special-casing is needed there.
 - All EditMode tests run via:
   ```powershell
   & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -logFile "G:\ClaudeProjects\NovelForge\TestProject~\Logs\RunTests.log"
@@ -1482,7 +1483,7 @@ Run the command from Global Constraints. Expected: `failed="0"`, 6 more tests pa
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Runtime/Commands/Builtin/SayLineCommand.cs Runtime/Commands/Builtin/PlayMusicCommand.cs Runtime/Commands/Builtin/PlaySfxCommand.cs Runtime/Commands/Builtin/ShowBackgroundCommand.cs Runtime/Commands/Builtin/ShowCgCommand.cs Runtime/Commands/Builtin/WaitCommand.cs Tests/Runtime/ContentCommandsTests.cs
+git add Runtime/Commands/Builtin/SayLineCommand.cs Runtime/Commands/Builtin/SayLineCommand.cs.meta Runtime/Commands/Builtin/PlayMusicCommand.cs Runtime/Commands/Builtin/PlayMusicCommand.cs.meta Runtime/Commands/Builtin/PlaySfxCommand.cs Runtime/Commands/Builtin/PlaySfxCommand.cs.meta Runtime/Commands/Builtin/ShowBackgroundCommand.cs Runtime/Commands/Builtin/ShowBackgroundCommand.cs.meta Runtime/Commands/Builtin/ShowCgCommand.cs Runtime/Commands/Builtin/ShowCgCommand.cs.meta Runtime/Commands/Builtin/WaitCommand.cs Runtime/Commands/Builtin/WaitCommand.cs.meta Tests/Runtime/ContentCommandsTests.cs Tests/Runtime/ContentCommandsTests.cs.meta
 git commit -m "$(cat <<'EOF'
 Add SayLine and the simple presenter-delegating commands
 
@@ -1601,7 +1602,7 @@ Run the command from Global Constraints. Expected: `failed="0"`, 2 more tests pa
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Runtime/Commands/Builtin/ChoiceCommand.cs Tests/Runtime/ChoiceCommandTests.cs
+git add Runtime/Commands/Builtin/ChoiceCommand.cs Runtime/Commands/Builtin/ChoiceCommand.cs.meta Tests/Runtime/ChoiceCommandTests.cs Tests/Runtime/ChoiceCommandTests.cs.meta
 git commit -m "$(cat <<'EOF'
 Add ChoiceCommand
 
@@ -2002,7 +2003,7 @@ Run the command from Global Constraints. Expected: `failed="0"`, 11 more tests p
 - [ ] **Step 7: Commit**
 
 ```bash
-git add Runtime/Parsing Tests/Runtime/ScriptCompilerCoreTests.cs
+git add Runtime/Parsing Tests/Runtime/ScriptCompilerCoreTests.cs Tests/Runtime/ScriptCompilerCoreTests.cs.meta
 git commit -m "$(cat <<'EOF'
 Add ScriptCompiler: labels, control flow, set, dialogue, generic commands
 
@@ -2222,7 +2223,7 @@ Run the command from Global Constraints. Expected: `failed="0"`, 6 more tests pa
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Runtime/Parsing/ScriptCompiler.cs Tests/Runtime/ScriptCompilerConditionalsTests.cs
+git add Runtime/Parsing/ScriptCompiler.cs Tests/Runtime/ScriptCompilerConditionalsTests.cs Tests/Runtime/ScriptCompilerConditionalsTests.cs.meta
 git commit -m "$(cat <<'EOF'
 Add if/else/endif support to ScriptCompiler
 
@@ -2423,7 +2424,7 @@ Run the command from Global Constraints. Expected: `failed="0"`, 4 more tests pa
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Runtime/Parsing/ScriptCompiler.cs Tests/Runtime/ScriptCompilerChoiceAndIntegrationTests.cs
+git add Runtime/Parsing/ScriptCompiler.cs Tests/Runtime/ScriptCompilerChoiceAndIntegrationTests.cs Tests/Runtime/ScriptCompilerChoiceAndIntegrationTests.cs.meta
 git commit -m "$(cat <<'EOF'
 Add choice blocks to ScriptCompiler; full example script passes end to end
 
