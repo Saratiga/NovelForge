@@ -20,9 +20,9 @@
 - Git commit messages end with: `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
 - All EditMode tests run via:
   ```powershell
-  & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -quit -logFile -
+  & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -logFile "G:\ClaudeProjects\NovelForge\TestProject~\Logs\RunTests.log"
   ```
-  After each run, read `TestProject~\TestResults.xml` and confirm the `<test-run>` root element's `failed` attribute is `"0"` and `passed` matches the expected count for that step. If Unity prompts for license activation on first run, open the Editor once interactively (Unity Hub → NovelForge TestProject~) to sign in / activate a free Personal license before relying on batchmode.
+  Deliberately no `-quit`: `-runTests` quits the Editor itself once tests finish, and pairing it with an explicit `-quit` races ahead of test execution in Unity 6000.6.0f1 — Unity exits cleanly right after its startup asset refresh, before the Test Runner ever starts, producing no `TestResults.xml` and no error (discovered during Task 1). `-logFile` points at a real file rather than `-logFile -`, since stdout capture of `-logFile -` was unreliable for diagnosing this. After each run, read `TestProject~\TestResults.xml` and confirm the `<test-run>` root element's `failed` attribute is `"0"` and `passed` matches the expected count for that step; if it's missing entirely, check `TestProject~\Logs\RunTests.log` for where the run actually stopped. If Unity prompts for license activation on first run, open the Editor once interactively (Unity Hub → NovelForge TestProject~) to sign in / activate a free Personal license before relying on batchmode.
 
 ---
 
@@ -179,11 +179,11 @@ If Package Manager later reports a different resolvable version for `com.unity.t
 
 - [ ] **Step 9: Run the EditMode smoke test**
 
-Run:
+Run (no `-quit` — see Global Constraints for why):
 ```powershell
-& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -quit -logFile -
+& "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -projectPath "G:\ClaudeProjects\NovelForge\TestProject~" -runTests -testPlatform EditMode -testResults "G:\ClaudeProjects\NovelForge\TestProject~\TestResults.xml" -logFile "G:\ClaudeProjects\NovelForge\TestProject~\Logs\RunTests.log"
 ```
-Expected: `TestProject~\TestResults.xml` exists, its `<test-run>` root has `total="1" passed="1" failed="0"`. If it instead reports zero tests found, open the project once in the Editor UI and check Window → General → Test Runner → EditMode for compile errors or a package resolution problem before proceeding.
+Expected: `TestProject~\TestResults.xml` exists, its `<test-run>` root has `total="1" passed="1" failed="0"`. If it instead reports zero tests found, check `TestProject~\Logs\RunTests.log` for where the run actually stopped before opening the Editor UI to investigate further.
 
 - [ ] **Step 10: Commit**
 
