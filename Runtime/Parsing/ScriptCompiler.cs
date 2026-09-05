@@ -9,8 +9,18 @@ namespace NovelForge.Runtime
     {
         private static readonly Regex DialogueLine = new(@"^([A-Za-z_][A-Za-z0-9_]*):\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex SetLine = new(@"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|\+=|-=)\s*(.+)$", RegexOptions.Compiled);
+        private static readonly Regex IfLine = new(@"^if\s+([A-Za-z_][A-Za-z0-9_]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$", RegexOptions.Compiled);
 
         private readonly CommandRegistry _registry;
+
+        private enum BlockKind { If, Else }
+
+        private struct PendingBlock
+        {
+            public BlockKind Kind;
+            public ConditionalJumpCommand IfCommand;
+            public JumpCommand ElseJumpCommand;
+        }
 
         public ScriptCompiler(CommandRegistry registry = null)
         {
@@ -23,6 +33,7 @@ namespace NovelForge.Runtime
             var labels = new Dictionary<string, int>();
             // (commandIndex, targetLabel, choiceOptionIndex-or-null, sourceLineNumber)
             var pendingLabelRefs = new List<(int commandIndex, string labelName, int? choiceOption, int lineNumber)>();
+            var blockStack = new Stack<PendingBlock>();
             string pendingComment = null;
 
             string[] lines = source.Replace("\r\n", "\n").Split('\n');
@@ -88,6 +99,42 @@ namespace NovelForge.Runtime
                     continue;
                 }
 
+                var ifMatch = IfLine.Match(line);
+                if (ifMatch.Success)
+                {
+                    string varName = ifMatch.Groups[1].Value;
+                    var op = ParseComparisonOperator(ifMatch.Groups[2].Value, lineNumber);
+                    object value = ParseLiteral(ifMatch.Groups[3].Value.Trim(), lineNumber);
+                    var cmd = new ConditionalJumpCommand(varName, op, value, -1);
+                    blockStack.Push(new PendingBlock { Kind = BlockKind.If, IfCommand = cmd });
+                    commands.Add(Attach(cmd, ref pendingComment));
+                    continue;
+                }
+
+                if (line == "else")
+                {
+                    if (blockStack.Count == 0 || blockStack.Peek().Kind != BlockKind.If)
+                        throw new ParseException(lineNumber, "'else' without a matching 'if'.");
+                    var pending = blockStack.Pop();
+                    var jumpToEndif = new JumpCommand(-1);
+                    commands.Add(jumpToEndif);
+                    pending.IfCommand.FalseTargetIndex = commands.Count;
+                    blockStack.Push(new PendingBlock { Kind = BlockKind.Else, ElseJumpCommand = jumpToEndif });
+                    continue;
+                }
+
+                if (line == "endif")
+                {
+                    if (blockStack.Count == 0)
+                        throw new ParseException(lineNumber, "'endif' without a matching 'if'.");
+                    var pending = blockStack.Pop();
+                    if (pending.Kind == BlockKind.If)
+                        pending.IfCommand.FalseTargetIndex = commands.Count;
+                    else
+                        pending.ElseJumpCommand.TargetIndex = commands.Count;
+                    continue;
+                }
+
                 var dialogueMatch = DialogueLine.Match(line);
                 if (dialogueMatch.Success)
                 {
@@ -106,6 +153,9 @@ namespace NovelForge.Runtime
                     throw new ParseException(lineNumber, $"Unknown command '{commandName}'.");
                 commands.Add(Attach(generic, ref pendingComment));
             }
+
+            if (blockStack.Count > 0)
+                throw new ParseException(lines.Length, "Unclosed 'if' block — missing 'endif'.");
 
             foreach (var (commandIndex, labelName, choiceOption, lineNumber) in pendingLabelRefs)
             {
@@ -165,6 +215,17 @@ namespace NovelForge.Runtime
 
             return (text.Trim(), emotion, position);
         }
+
+        private static ComparisonOperator ParseComparisonOperator(string token, int lineNumber) => token switch
+        {
+            "==" => ComparisonOperator.Equal,
+            "!=" => ComparisonOperator.NotEqual,
+            ">" => ComparisonOperator.GreaterThan,
+            ">=" => ComparisonOperator.GreaterOrEqual,
+            "<" => ComparisonOperator.LessThan,
+            "<=" => ComparisonOperator.LessOrEqual,
+            _ => throw new ParseException(lineNumber, $"Unknown comparison operator '{token}'."),
+        };
 
         private static object ParseLiteral(string token, int lineNumber)
         {
