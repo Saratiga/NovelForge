@@ -1655,7 +1655,8 @@ namespace NovelForge.Runtime.Tests
         {
             var script = Compile("jump later\nlabel later\nreturn\n");
 
-            var jump = Assert.IsInstanceOf<JumpCommand>(script.Commands[0]) as JumpCommand;
+            Assert.IsInstanceOf<JumpCommand>(script.Commands[0]);
+            var jump = script.Commands[0] as JumpCommand;
             Assert.AreEqual(1, jump.TargetIndex);
         }
 
@@ -1671,7 +1672,8 @@ namespace NovelForge.Runtime.Tests
         {
             var script = Compile("gosub common\nlabel common\nreturn\n");
 
-            var gosub = Assert.IsInstanceOf<GosubCommand>(script.Commands[0]) as GosubCommand;
+            Assert.IsInstanceOf<GosubCommand>(script.Commands[0]);
+            var gosub = script.Commands[0] as GosubCommand;
             Assert.AreEqual(1, gosub.TargetIndex);
         }
 
@@ -1689,7 +1691,8 @@ namespace NovelForge.Runtime.Tests
         {
             var script = Compile("Alice: Привет! #happy left\n");
 
-            var say = Assert.IsInstanceOf<SayLineCommand>(script.Commands[0]) as SayLineCommand;
+            Assert.IsInstanceOf<SayLineCommand>(script.Commands[0]);
+            var say = script.Commands[0] as SayLineCommand;
             var context = new StoryContext { Dialogue = new RecordingDialoguePresenter() };
             CoroutineTestUtil.RunToCompletion(say.Execute(context, new StoryPointer()));
             var recorded = ((RecordingDialoguePresenter)context.Dialogue).Calls[0];
@@ -1705,7 +1708,8 @@ namespace NovelForge.Runtime.Tests
         {
             var script = Compile("Alice: Как дела?\n");
 
-            var say = Assert.IsInstanceOf<SayLineCommand>(script.Commands[0]) as SayLineCommand;
+            Assert.IsInstanceOf<SayLineCommand>(script.Commands[0]);
+            var say = script.Commands[0] as SayLineCommand;
             var context = new StoryContext { Dialogue = new RecordingDialoguePresenter() };
             CoroutineTestUtil.RunToCompletion(say.Execute(context, new StoryPointer()));
             var recorded = ((RecordingDialoguePresenter)context.Dialogue).Calls[0];
@@ -1745,6 +1749,8 @@ namespace NovelForge.Runtime.Tests
     }
 }
 ```
+
+`Assert.IsInstanceOf<T>(actual)` returns `void` in the Unity-bundled NUnit fork (`com.unity.ext.nunit`, NUnit 3.5.0.0), not the asserted object — `Assert.IsInstanceOf<JumpCommand>(x) as JumpCommand` is a compile error (CS0039, cannot convert `void` via `as`), not merely a runtime assertion failure. The four call sites above that assigned from such an expression (`jump`, `gosub`, and the two `say` locals) split the assertion and the cast into two statements instead. Discovered while executing Task 8 — if you're implementing this from an older copy of the plan, use the split form.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
