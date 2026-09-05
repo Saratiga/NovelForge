@@ -495,8 +495,24 @@ namespace NovelForge.Runtime
     public class StoryPointer : IStoryPointer
     {
         private readonly Stack<int> _callStack = new();
+        private int _current;
 
-        public int Current { get; set; }
+        public int Current
+        {
+            get => _current;
+            set { _current = value; Moved = true; }
+        }
+
+        // Tracked explicitly rather than inferred from "did Current change value" —
+        // a jump/gosub/choice whose target equals its own index (the common VN "menu
+        // hub" pattern: a label immediately followed by a choice that loops back to
+        // itself) sets Current to the same value it already held, which value-equality
+        // would misread as "the command didn't move the pointer." Internal: only
+        // PlaybackController (same assembly) needs this, so IStoryPointer stays
+        // untouched — every Command still sees just Current/Push/TryPop.
+        internal bool Moved { get; private set; }
+
+        internal void ResetMoved() => Moved = false;
 
         public void Push(int returnIndex) => _callStack.Push(returnIndex);
 
@@ -767,13 +783,22 @@ namespace NovelForge.Runtime
         {
             int before = _pointer.Current;
             Command command = _script.Commands[before];
+            _pointer.ResetMoved();
             yield return command.Execute(_context, _pointer);
-            if (_pointer.Current == before)
+            if (!_pointer.Moved)
                 _pointer.Current = before + 1;
         }
     }
 }
 ```
+
+`before` is no longer compared against `Current` — a jump/gosub/choice that targets its own
+index (`Current` set back to the same value) still counts as "moved," so it doesn't fall
+through to an unwanted auto-increment. This fixes a real gap in the original design: a label
+immediately followed by a command that can jump back to that same label (e.g. a `choice`
+re-presenting itself — a common VN "menu hub" pattern) previously got silently skipped instead
+of looping, since `Current == before` looked identical to "nothing happened." Found during
+final review, after all 10 tasks had already landed on the original (buggy) version.
 
 - [ ] **Step 9: Run tests to verify they pass**
 
@@ -1150,6 +1175,7 @@ namespace NovelForge.Runtime
 ```csharp
 using System;
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1202,7 +1228,20 @@ namespace NovelForge.Runtime
                 };
             }
 
-            float currentNumber = variables.GetFloat(_variableName);
+            float currentNumber;
+            try
+            {
+                currentNumber = variables.GetFloat(_variableName);
+            }
+            catch (FormatException)
+            {
+                // The literal being compared against is numeric, but the variable itself
+                // holds something GetFloat can't convert (e.g. a string) — a one-token
+                // authoring mistake like `if playerName > 3` against a string variable.
+                // Treat as false rather than letting the conversion crash playback.
+                Debug.LogError($"NovelForge: '{_variableName}' is not numeric — condition treated as false.");
+                return false;
+            }
             float compareNumber = Convert.ToSingle(_value);
             return _op switch
             {
@@ -1218,6 +1257,13 @@ namespace NovelForge.Runtime
     }
 }
 ```
+
+Found during the Phase 1 final review: the numeric branch dispatches on the *literal's* type,
+not the *variable's* — `if playerName > 3` against a string-valued variable previously reached
+`Convert.ToSingle` on that string and threw `FormatException` mid-playback, against the spec's
+no-crash policy. `variables.GetFloat` is otherwise tolerant (defaults to `0` for a missing key),
+so the failure only comes from a stored value `Convert.ToSingle` can't parse — a string, in
+practice, since `int`/`float`/`bool` all convert cleanly.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -1350,6 +1396,7 @@ Run the command from Global Constraints. Expected: compile errors — none of th
 `Runtime/Commands/Builtin/SayLineCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1370,6 +1417,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Dialogue == null)
+            {
+                Debug.LogError("NovelForge: no IDialoguePresenter wired — skipping dialogue line.");
+                yield break;
+            }
             yield return context.Dialogue.ShowLine(_characterId, _text, _emotion, _position);
         }
     }
@@ -1379,6 +1431,7 @@ namespace NovelForge.Runtime
 `Runtime/Commands/Builtin/PlayMusicCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1390,6 +1443,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Audio == null)
+            {
+                Debug.LogError("NovelForge: no IAudioPresenter wired — skipping music.");
+                yield break;
+            }
             yield return context.Audio.PlayMusic(_trackId);
         }
     }
@@ -1399,6 +1457,7 @@ namespace NovelForge.Runtime
 `Runtime/Commands/Builtin/PlaySfxCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1410,6 +1469,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Audio == null)
+            {
+                Debug.LogError("NovelForge: no IAudioPresenter wired — skipping sfx.");
+                yield break;
+            }
             yield return context.Audio.PlaySfx(_clipId);
         }
     }
@@ -1419,6 +1483,7 @@ namespace NovelForge.Runtime
 `Runtime/Commands/Builtin/ShowBackgroundCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1430,6 +1495,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Backgrounds == null)
+            {
+                Debug.LogError("NovelForge: no IBackgroundPresenter wired — skipping background change.");
+                yield break;
+            }
             yield return context.Backgrounds.ShowBackground(_backgroundId);
         }
     }
@@ -1439,6 +1509,7 @@ namespace NovelForge.Runtime
 `Runtime/Commands/Builtin/ShowCgCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1450,6 +1521,11 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Backgrounds == null)
+            {
+                Debug.LogError("NovelForge: no IBackgroundPresenter wired — skipping CG.");
+                yield break;
+            }
             yield return context.Backgrounds.ShowCg(_cgId);
         }
     }
@@ -1459,6 +1535,7 @@ namespace NovelForge.Runtime
 `Runtime/Commands/Builtin/WaitCommand.cs`:
 ```csharp
 using System.Collections;
+using UnityEngine;
 
 namespace NovelForge.Runtime
 {
@@ -1470,11 +1547,23 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Timing == null)
+            {
+                Debug.LogError("NovelForge: no ITimingPresenter wired — skipping wait.");
+                yield break;
+            }
             yield return context.Timing.Wait(_seconds);
         }
     }
 }
 ```
+
+Each of the six commands above now guards its presenter with a null check before delegating,
+logging and skipping instead of throwing a `NullReferenceException` — the next phase wires
+presenters onto `StoryContext` one at a time, so a partially-wired context is the normal
+transitional state, and the spec's runtime error policy is log-and-continue, not crash. Found
+during the Phase 1 final review; none of this task's own tests change (they always wire a real
+presenter, so the guards never trigger in this task's own suite).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1580,6 +1669,13 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (context.Choices == null)
+            {
+                Debug.LogError("NovelForge: no IChoicePresenter wired — defaulting to option 0.");
+                pointer.Current = _targetIndices[0];
+                yield break;
+            }
+
             int selected = -1;
             yield return context.Choices.PresentChoices(_optionTexts, i => selected = i);
 
@@ -1594,6 +1690,10 @@ namespace NovelForge.Runtime
     }
 }
 ```
+
+Guards `context.Choices == null` the same way Task 6's presenter-delegating commands do — logs
+and defaults to option 0 rather than throwing, since there's no safe "skip" for a choice (some
+branch has to be taken). Found during the Phase 1 final review.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1922,8 +2022,19 @@ namespace NovelForge.Runtime
                 int spaceIndex = line.IndexOf(' ');
                 string commandName = spaceIndex < 0 ? line : line.Substring(0, spaceIndex);
                 string rawArgs = spaceIndex < 0 ? string.Empty : line.Substring(spaceIndex + 1);
-                if (!_registry.TryCreate(commandName, rawArgs, out Command generic))
-                    throw new ParseException(lineNumber, $"Unknown command '{commandName}'.");
+                Command generic;
+                try
+                {
+                    if (!_registry.TryCreate(commandName, rawArgs, out generic))
+                        throw new ParseException(lineNumber, $"Unknown command '{commandName}'.");
+                }
+                catch (Exception e) when (e is not ParseException)
+                {
+                    // A registered factory (e.g. "wait"'s float.Parse) can throw its own
+                    // exception type on bad arguments — re-raise as a located ParseException
+                    // so every parse failure, built-in or custom, carries a line number.
+                    throw new ParseException(lineNumber, $"Command '{commandName}' rejected arguments '{rawArgs}': {e.Message}");
+                }
                 commands.Add(Attach(generic, ref pendingComment));
             }
 
@@ -2001,6 +2112,13 @@ namespace NovelForge.Runtime
     }
 }
 ```
+
+The generic-command dispatch now wraps `_registry.TryCreate` in a try/catch that re-raises any
+non-`ParseException` a factory throws (e.g. `wait`'s `float.Parse` on a malformed argument) as
+a `ParseException` with the current line number — found during the Phase 1 final review. Before
+this fix, a factory's own exception type would escape `Compile` unlocated, breaking the
+"every parse failure is a `ParseException` with a line" contract every other branch upholds,
+which the next phase's `ScriptedImporter` depends on for its console error output.
 
 - [ ] **Step 6: Run tests to verify they pass**
 
