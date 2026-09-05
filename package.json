@@ -1,0 +1,10 @@
+{
+  "name": "com.novelforge.core",
+  "version": "0.1.0",
+  "displayName": "NovelForge",
+  "description": "Personal Unity toolkit for building visual novels: DSL-scripted dialogue, branching, save/load, localization, and a read/write branch-graph editor.",
+  "unity": "6000.6",
+  "author": {
+    "name": "vova1"
+  }
+}
