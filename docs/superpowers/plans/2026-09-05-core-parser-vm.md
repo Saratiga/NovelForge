@@ -2259,6 +2259,8 @@ EOF
 
 ```csharp
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace NovelForge.Runtime.Tests
 {
@@ -2299,6 +2301,10 @@ namespace NovelForge.Runtime.Tests
             var context = new StoryContext { Choices = choices, Dialogue = dialogue };
             var controller = new PlaybackController(script, context);
 
+            // "return" here has no matching gosub (the script only reaches it via the
+            // choice jump), so the call stack is empty when it runs — expected, see
+            // Task 4's Return_WithEmptyStack test for the same pattern.
+            LogAssert.Expect(LogType.Error, "NovelForge: 'return' with an empty call stack — ending playback.");
             CoroutineTestUtil.RunToCompletion(controller.RunAll());
 
             CollectionAssert.AreEqual(new[] { "What happened?" }, dialogue.Calls.ConvertAll(c => c.text));
@@ -2360,6 +2366,11 @@ label the_end
             };
             var controller = new PlaybackController(script, context);
 
+            // The script's final "return" (under label the_end) is reached via a plain
+            // jump, not gosub, so the call stack is empty when it runs — the same
+            // "graceful end of story" pattern Task 4's Return_WithEmptyStack test covers,
+            // and it logs the same expected error.
+            LogAssert.Expect(LogType.Error, "NovelForge: 'return' with an empty call stack — ending playback.");
             CoroutineTestUtil.RunToCompletion(controller.RunAll());
 
             CollectionAssert.AreEqual(new[] { "park_day" }, backgrounds.BackgroundCalls);
