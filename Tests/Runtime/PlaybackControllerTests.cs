@@ -60,9 +60,9 @@ namespace NovelForge.Runtime.Tests
         {
             var commands = new Command[]
             {
-                new RecordingPointerCommand(p => { p.Push(1); p.Current = 2; }),
-                new RecordingPointerCommand(p => { }),
+                new RecordingPointerCommand(p => { p.Push(2); p.Current = 1; }),
                 new RecordingPointerCommand(p => { p.TryPop(out int ret); p.Current = ret; }),
+                new RecordingPointerCommand(p => { }),
             };
             var script = new NovelScript(commands, new Dictionary<string, int>());
             var controller = new PlaybackController(script, new StoryContext());
