@@ -8,8 +8,13 @@ namespace NovelForge.Runtime
         [SerializeField] internal AudioLibrary library;
         [SerializeField] internal AudioSource musicSourceA;
         [SerializeField] internal AudioSource musicSourceB;
-        [SerializeField] internal AudioSource sfxSource;
         [SerializeField] internal float musicCrossfadeSeconds = 1f;
+        [SerializeField] internal Transform sfxVoiceParent;
+
+        private readonly System.Collections.Generic.List<AudioSource> _sfxPool = new();
+        private readonly System.Collections.Generic.HashSet<AudioSource> _busySfxSources = new();
+
+        internal System.Collections.Generic.IReadOnlyList<AudioSource> SfxVoicesForTesting => _sfxPool;
 
         internal IDeltaTimeSource TimeSource = new UnityDeltaTimeSource();
 
@@ -60,14 +65,9 @@ namespace NovelForge.Runtime
                 yield break;
             }
 
-            if (sfxSource == null)
-            {
-                Debug.LogError("NovelForge: AudioPresenter is missing sfxSource — skipping sfx.");
-                yield break;
-            }
-
-            sfxSource.clip = clip;
-            sfxSource.Play();
+            var source = AcquireSfxVoice();
+            source.clip = clip;
+            source.Play();
 
             float elapsed = 0f;
             while (elapsed < clip.length)
@@ -75,6 +75,30 @@ namespace NovelForge.Runtime
                 elapsed += TimeSource.DeltaTime;
                 yield return null;
             }
+
+            source.Stop();
+            _busySfxSources.Remove(source);
+        }
+
+        private AudioSource AcquireSfxVoice()
+        {
+            foreach (var source in _sfxPool)
+            {
+                if (!_busySfxSources.Contains(source))
+                {
+                    _busySfxSources.Add(source);
+                    return source;
+                }
+            }
+
+            var parent = sfxVoiceParent != null ? sfxVoiceParent : transform;
+            var voiceObject = new GameObject($"SfxVoice_{_sfxPool.Count}");
+            voiceObject.transform.SetParent(parent);
+            var voice = voiceObject.AddComponent<AudioSource>();
+            voice.playOnAwake = false;
+            _sfxPool.Add(voice);
+            _busySfxSources.Add(voice);
+            return voice;
         }
     }
 }

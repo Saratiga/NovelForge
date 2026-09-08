@@ -26,7 +26,6 @@ namespace NovelForge.Runtime.Tests
             presenter.library = library;
             presenter.musicSourceA = go.AddComponent<AudioSource>();
             presenter.musicSourceB = go.AddComponent<AudioSource>();
-            presenter.sfxSource = go.AddComponent<AudioSource>();
             presenter.musicCrossfadeSeconds = 0.1f;
             presenter.TimeSource = time;
             return presenter;
@@ -111,7 +110,8 @@ namespace NovelForge.Runtime.Tests
 
             CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("door_open"));
 
-            Assert.AreEqual(clip, presenter.sfxSource.clip);
+            Assert.AreEqual(1, presenter.SfxVoicesForTesting.Count);
+            Assert.AreEqual(clip, presenter.SfxVoicesForTesting[0].clip);
         }
 
         [Test]
@@ -124,16 +124,45 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
-        public void PlaySfx_MissingSfxSource_LogsErrorAndDoesNotThrow()
+        public void PlaySfx_TwoOverlappingCalls_UseDifferentVoices()
         {
-            var clip = CreateClip("door");
             var library = CreateLibrary();
-            library.sfxClips = new[] { new AudioLibrary.Entry { id = "door_open", clip = clip } };
-            var presenter = CreatePresenter(library, new FakeDeltaTimeSource { DeltaTime = 1f });
-            presenter.sfxSource = null;
+            var clipA = CreateClip("sfx_a");
+            var clipB = CreateClip("sfx_b");
+            library.sfxClips = new[]
+            {
+                new AudioLibrary.Entry { id = "sfx_a", clip = clipA },
+                new AudioLibrary.Entry { id = "sfx_b", clip = clipB },
+            };
+            var time = new FakeDeltaTimeSource { DeltaTime = 0f };
+            var presenter = CreatePresenter(library, time);
 
-            LogAssert.Expect(LogType.Error, "NovelForge: AudioPresenter is missing sfxSource — skipping sfx.");
-            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("door_open")));
+            var routineA = presenter.PlaySfx("sfx_a");
+            var routineB = presenter.PlaySfx("sfx_b");
+            routineA.MoveNext();
+            routineB.MoveNext();
+
+            Assert.AreEqual(2, presenter.SfxVoicesForTesting.Count);
+            Assert.AreEqual(clipA, presenter.SfxVoicesForTesting[0].clip);
+            Assert.AreEqual(clipB, presenter.SfxVoicesForTesting[1].clip);
+
+            time.DeltaTime = 1f;
+            routineA.MoveNext();
+            routineB.MoveNext();
+        }
+
+        [Test]
+        public void PlaySfx_SequentialCalls_ReuseSameVoiceOnceFreed()
+        {
+            var library = CreateLibrary();
+            var clip = CreateClip("sfx_a");
+            library.sfxClips = new[] { new AudioLibrary.Entry { id = "sfx_a", clip = clip } };
+            var presenter = CreatePresenter(library, new FakeDeltaTimeSource { DeltaTime = 10f });
+
+            CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("sfx_a"));
+            CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("sfx_a"));
+
+            Assert.AreEqual(1, presenter.SfxVoicesForTesting.Count);
         }
     }
 }
