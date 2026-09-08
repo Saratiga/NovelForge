@@ -111,5 +111,41 @@ namespace NovelForge.Runtime.Tests
             LogAssert.Expect(LogType.Error, "NovelForge: BackgroundPresenter is missing backgroundSlotA/backgroundSlotB — skipping background change.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.ShowBackground("park_day")));
         }
+
+        [Test]
+        public void ShowCg_FadesInOnCgSlot()
+        {
+            var sprite = CreateSprite("intro_cg");
+            var library = CreateLibrary();
+            library.cgs = new[] { new BackgroundLibrary.Entry { id = "intro_cg", sprite = sprite } };
+            var presenter = CreatePresenter(library, new FakeDeltaTimeSource { DeltaTime = 1f });
+
+            CoroutineTestUtil.RunToCompletion(presenter.ShowCg("intro_cg"));
+
+            Assert.AreEqual(sprite, presenter.cgSlot.sprite);
+            Assert.AreEqual(1f, presenter.cgSlot.color.a, 0.001f);
+        }
+
+        [Test]
+        public void ShowCg_UnknownId_LogsErrorAndDoesNotThrow()
+        {
+            var presenter = CreatePresenter(CreateLibrary(), new FakeDeltaTimeSource { DeltaTime = 1f });
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no CG sprite registered for id 'missing' — skipping.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.ShowCg("missing")));
+        }
+
+        [Test]
+        public void ShowCg_MissingSlot_LogsErrorAndDoesNotThrow()
+        {
+            var sprite = CreateSprite("intro_cg");
+            var library = CreateLibrary();
+            library.cgs = new[] { new BackgroundLibrary.Entry { id = "intro_cg", sprite = sprite } };
+            var presenter = CreatePresenter(library, new FakeDeltaTimeSource { DeltaTime = 1f });
+            presenter.cgSlot = null;
+
+            LogAssert.Expect(LogType.Error, "NovelForge: BackgroundPresenter is missing cgSlot — skipping CG.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.ShowCg("intro_cg")));
+        }
     }
 }

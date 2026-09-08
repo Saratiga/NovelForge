@@ -53,7 +53,30 @@ namespace NovelForge.Runtime
 
         public IEnumerator ShowCg(string cgId)
         {
-            yield break;
+            if (library == null || !library.TryGetCgSprite(cgId, out var sprite))
+            {
+                Debug.LogError($"NovelForge: no CG sprite registered for id '{cgId}' — skipping.");
+                yield break;
+            }
+
+            if (cgSlot == null)
+            {
+                Debug.LogError("NovelForge: BackgroundPresenter is missing cgSlot — skipping CG.");
+                yield break;
+            }
+
+            cgSlot.sprite = sprite;
+            SetAlpha(cgSlot, 0f);
+
+            float t = 0f;
+            while (t < cgFadeSeconds)
+            {
+                t += TimeSource.DeltaTime;
+                SetAlpha(cgSlot, Mathf.Clamp01(t / cgFadeSeconds));
+                yield return null;
+            }
+
+            SetAlpha(cgSlot, 1f);
         }
 
         private static void SetAlpha(SpriteRenderer renderer, float alpha)
