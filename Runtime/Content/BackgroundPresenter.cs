@@ -15,10 +15,17 @@ namespace NovelForge.Runtime
         internal IDeltaTimeSource TimeSource = new UnityDeltaTimeSource();
 
         private SpriteRenderer _activeBackgroundSlot;
+        private int _backgroundFadeGeneration;
 
         public IEnumerator ShowBackground(string backgroundId)
         {
-            if (library == null || !library.TryGetBackgroundSprite(backgroundId, out var sprite))
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: BackgroundPresenter is missing library — skipping background change.");
+                yield break;
+            }
+
+            if (!library.TryGetBackgroundSprite(backgroundId, out var sprite))
             {
                 Debug.LogError($"NovelForge: no background sprite registered for id '{backgroundId}' — skipping.");
                 yield break;
@@ -30,11 +37,15 @@ namespace NovelForge.Runtime
                 yield break;
             }
 
+            int generation = ++_backgroundFadeGeneration;
+
             _activeBackgroundSlot ??= backgroundSlotA;
             var from = _activeBackgroundSlot;
             var to = _activeBackgroundSlot == backgroundSlotA ? backgroundSlotB : backgroundSlotA;
             to.sprite = sprite;
             SetAlpha(to, 0f);
+
+            float cgStartAlpha = cgSlot != null ? cgSlot.color.a : 0f;
 
             float t = 0f;
             while (t < backgroundFadeSeconds)
@@ -43,17 +54,32 @@ namespace NovelForge.Runtime
                 float ratio = Mathf.Clamp01(t / backgroundFadeSeconds);
                 SetAlpha(to, ratio);
                 SetAlpha(from, 1f - ratio);
+                if (cgSlot != null)
+                    SetAlpha(cgSlot, cgStartAlpha * (1f - ratio));
                 yield return null;
+                if (generation != _backgroundFadeGeneration)
+                    yield break;
             }
+
+            if (generation != _backgroundFadeGeneration)
+                yield break;
 
             SetAlpha(to, 1f);
             SetAlpha(from, 0f);
+            if (cgSlot != null)
+                SetAlpha(cgSlot, 0f);
             _activeBackgroundSlot = to;
         }
 
         public IEnumerator ShowCg(string cgId)
         {
-            if (library == null || !library.TryGetCgSprite(cgId, out var sprite))
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: BackgroundPresenter is missing library — skipping CG.");
+                yield break;
+            }
+
+            if (!library.TryGetCgSprite(cgId, out var sprite))
             {
                 Debug.LogError($"NovelForge: no CG sprite registered for id '{cgId}' — skipping.");
                 yield break;

@@ -101,6 +101,72 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void PlayMusic_MissingLibrary_LogsErrorAndDoesNotThrow()
+        {
+            var presenter = CreatePresenter(CreateLibrary(), new FakeDeltaTimeSource { DeltaTime = 1f });
+            presenter.library = null;
+
+            LogAssert.Expect(LogType.Error, "NovelForge: AudioPresenter is missing library — skipping music.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.PlayMusic("theme_calm")));
+        }
+
+        [Test]
+        public void PlayMusic_HalfwayThroughFade_ReportsIntermediateVolumes()
+        {
+            var clip = CreateClip("theme");
+            var library = CreateLibrary();
+            library.musicTracks = new[] { new AudioLibrary.Entry { id = "theme_calm", clip = clip } };
+            var presenter = CreatePresenter(library, new FakeDeltaTimeSource { DeltaTime = 0.05f });
+
+            var routine = presenter.PlayMusic("theme_calm");
+            routine.MoveNext();
+
+            Assert.AreEqual(0.5f, presenter.musicSourceB.volume, 0.001f);
+            Assert.AreEqual(0.5f, presenter.musicSourceA.volume, 0.001f);
+        }
+
+        [Test]
+        public void PlayMusic_StaleReentrantCall_DoesNotStompNewerState()
+        {
+            var library = CreateLibrary();
+            var clipA = CreateClip("track_a");
+            var clipB = CreateClip("track_b");
+            library.musicTracks = new[]
+            {
+                new AudioLibrary.Entry { id = "track_a", clip = clipA },
+                new AudioLibrary.Entry { id = "track_b", clip = clipB },
+            };
+            var time = new FakeDeltaTimeSource { DeltaTime = 1f };
+            var presenter = CreatePresenter(library, time);
+
+            // Call 1 completes, flipping active musicSourceA -> musicSourceB.
+            CoroutineTestUtil.RunToCompletion(presenter.PlayMusic("track_a"));
+
+            // Call 2 starts a B -> A fade but only advances partway, then goes stale
+            // (superseded by calls 3 and 4 below) without ever completing.
+            var staleRoutine = presenter.PlayMusic("track_b");
+            time.DeltaTime = 0f;
+            staleRoutine.MoveNext();
+
+            // Call 3 (same direction as call 2, since active hasn't flipped yet) completes,
+            // flipping active B -> A.
+            time.DeltaTime = 1f;
+            CoroutineTestUtil.RunToCompletion(presenter.PlayMusic("track_a"));
+
+            // Call 4 is the most recent request: A -> B, and it completes.
+            CoroutineTestUtil.RunToCompletion(presenter.PlayMusic("track_b"));
+
+            Assert.IsTrue(presenter.musicSourceB.isPlaying);
+            Assert.AreEqual(1f, presenter.musicSourceB.volume, 0.001f);
+
+            // Resuming the stale call 2 must not stop/undo call 4's result.
+            staleRoutine.MoveNext();
+
+            Assert.IsTrue(presenter.musicSourceB.isPlaying);
+            Assert.AreEqual(1f, presenter.musicSourceB.volume, 0.001f);
+        }
+
+        [Test]
         public void PlaySfx_PlaysRegisteredClip()
         {
             var clip = CreateClip("door");
@@ -121,6 +187,16 @@ namespace NovelForge.Runtime.Tests
 
             LogAssert.Expect(LogType.Error, "NovelForge: no sfx clip registered for id 'missing' — skipping.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("missing")));
+        }
+
+        [Test]
+        public void PlaySfx_MissingLibrary_LogsErrorAndDoesNotThrow()
+        {
+            var presenter = CreatePresenter(CreateLibrary(), new FakeDeltaTimeSource { DeltaTime = 1f });
+            presenter.library = null;
+
+            LogAssert.Expect(LogType.Error, "NovelForge: AudioPresenter is missing library — skipping sfx.");
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.PlaySfx("door_open")));
         }
 
         [Test]

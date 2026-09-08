@@ -19,10 +19,17 @@ namespace NovelForge.Runtime
         internal IDeltaTimeSource TimeSource = new UnityDeltaTimeSource();
 
         private AudioSource _activeMusicSource;
+        private int _musicFadeGeneration;
 
         public IEnumerator PlayMusic(string trackId)
         {
-            if (library == null || !library.TryGetMusicClip(trackId, out var clip))
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: AudioPresenter is missing library — skipping music.");
+                yield break;
+            }
+
+            if (!library.TryGetMusicClip(trackId, out var clip))
             {
                 Debug.LogError($"NovelForge: no music clip registered for id '{trackId}' — skipping.");
                 yield break;
@@ -33,6 +40,8 @@ namespace NovelForge.Runtime
                 Debug.LogError("NovelForge: AudioPresenter is missing musicSourceA/musicSourceB — skipping music.");
                 yield break;
             }
+
+            int generation = ++_musicFadeGeneration;
 
             _activeMusicSource ??= musicSourceA;
             var from = _activeMusicSource;
@@ -49,7 +58,12 @@ namespace NovelForge.Runtime
                 to.volume = ratio;
                 from.volume = 1f - ratio;
                 yield return null;
+                if (generation != _musicFadeGeneration)
+                    yield break;
             }
+
+            if (generation != _musicFadeGeneration)
+                yield break;
 
             to.volume = 1f;
             from.Stop();
@@ -59,7 +73,13 @@ namespace NovelForge.Runtime
 
         public IEnumerator PlaySfx(string clipId)
         {
-            if (library == null || !library.TryGetSfxClip(clipId, out var clip))
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: AudioPresenter is missing library — skipping sfx.");
+                yield break;
+            }
+
+            if (!library.TryGetSfxClip(clipId, out var clip))
             {
                 Debug.LogError($"NovelForge: no sfx clip registered for id '{clipId}' — skipping.");
                 yield break;
@@ -99,6 +119,13 @@ namespace NovelForge.Runtime
             _sfxPool.Add(voice);
             _busySfxSources.Add(voice);
             return voice;
+        }
+
+        private void OnDisable()
+        {
+            foreach (var source in _sfxPool)
+                source.Stop();
+            _busySfxSources.Clear();
         }
     }
 }
