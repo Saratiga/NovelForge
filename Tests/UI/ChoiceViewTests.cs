@@ -96,5 +96,49 @@ namespace NovelForge.UI.Tests
             LogAssert.Expect(LogType.Error, "NovelForge: ChoiceView has no optionButtons wired — skipping choice.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(view.PresentChoices(new[] { "Yes" }, _ => { })));
         }
+
+        [Test]
+        public void PresentChoices_CalledAgainAfterFirstSelection_ShowsNewTextNotStaleText()
+        {
+            var view = CreateView(2);
+            int? firstSelected = null;
+
+            var firstRoutine = view.PresentChoices(new[] { "Yes", "No" }, i => firstSelected = i);
+            firstRoutine.MoveNext();
+            view.optionButtons[0].onClick.Invoke();
+            firstRoutine.MoveNext();
+
+            Assert.AreEqual(0, firstSelected);
+
+            int? secondSelected = null;
+            var secondRoutine = view.PresentChoices(new[] { "Maybe", "Never" }, i => secondSelected = i);
+            secondRoutine.MoveNext();
+
+            Assert.AreEqual("Maybe", view.optionButtons[0].GetComponentInChildren<TMP_Text>().text);
+            Assert.AreEqual("Never", view.optionButtons[1].GetComponentInChildren<TMP_Text>().text);
+
+            view.optionButtons[1].onClick.Invoke();
+            secondRoutine.MoveNext();
+
+            Assert.AreEqual(1, secondSelected);
+        }
+
+        [Test]
+        public void PresentChoices_ButtonWithNoLabelChild_LogsErrorAndDoesNotThrow()
+        {
+            var go = new GameObject("ChoiceView");
+            _spawned.Add(go);
+            var view = go.AddComponent<ChoiceView>();
+            var buttonGo = new GameObject("ButtonWithoutLabel");
+            _spawned.Add(buttonGo);
+            view.optionButtons = new[] { buttonGo.AddComponent<Button>() };
+
+            LogAssert.Expect(LogType.Error, "NovelForge: ChoiceView button 0 has no TMP_Text label child — showing blank button.");
+            Assert.DoesNotThrow(() =>
+            {
+                var routine = view.PresentChoices(new[] { "Yes" }, _ => { });
+                routine.MoveNext();
+            });
+        }
     }
 }

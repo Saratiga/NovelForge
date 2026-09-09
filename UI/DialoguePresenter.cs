@@ -29,7 +29,11 @@ namespace NovelForge.UI
             string displayName = characterId;
             Color nameColor = Color.white;
 
-            if (library == null || !library.TryGetCharacter(characterId, out var character))
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: DialoguePresenter is missing library — showing text without actor.");
+            }
+            else if (!library.TryGetCharacter(characterId, out var character))
             {
                 Debug.LogError($"NovelForge: no character registered for id '{characterId}' — showing text without actor.");
             }
@@ -38,32 +42,43 @@ namespace NovelForge.UI
                 displayName = character.DisplayName;
                 nameColor = character.NameColor;
 
-                if (!character.TryGetSprite(emotion, out var sprite))
+                if (!string.IsNullOrEmpty(emotion))
                 {
-                    Debug.LogError($"NovelForge: character '{characterId}' has no sprite for emotion '{emotion}' — leaving actor unchanged.");
-                }
-                else
-                {
-                    var slotView = FindSlot(position);
-                    if (slotView == null)
+                    if (!character.TryGetSprite(emotion, out var sprite))
+                    {
+                        Debug.LogError($"NovelForge: character '{characterId}' has no sprite for emotion '{emotion}' — leaving actor unchanged.");
+                    }
+                    else if (!TryFindSlot(position, out var slotView))
+                    {
                         Debug.LogError($"NovelForge: no position slot registered for '{position}' — skipping actor display.");
+                    }
+                    else if (slotView == null)
+                    {
+                        Debug.LogError($"NovelForge: position slot '{position}' has no ActorView assigned — skipping actor display.");
+                    }
                     else
+                    {
                         yield return slotView.ShowSprite(sprite);
+                    }
                 }
             }
 
             yield return dialogueBox.ShowText(displayName, nameColor, text);
         }
 
-        private ActorView FindSlot(string position)
+        private bool TryFindSlot(string position, out ActorView view)
         {
             foreach (var slot in positionSlots)
             {
                 if (slot.position == position)
-                    return slot.view;
+                {
+                    view = slot.view;
+                    return true;
+                }
             }
 
-            return null;
+            view = null;
+            return false;
         }
     }
 }

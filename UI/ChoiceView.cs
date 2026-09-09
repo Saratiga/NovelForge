@@ -32,10 +32,16 @@ namespace NovelForge.UI
                 if (i < count)
                 {
                     int optionIndex = i;
+                    optionButtons[i].gameObject.SetActive(true);
                     var label = optionButtons[i].GetComponentInChildren<TMPro.TMP_Text>();
                     if (label != null)
+                    {
                         label.text = optionTexts[i];
-                    optionButtons[i].gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        Debug.LogError($"NovelForge: ChoiceView button {i} has no TMP_Text label child — showing blank button.");
+                    }
                     optionButtons[i].onClick.AddListener(() => selected = optionIndex);
                 }
                 else

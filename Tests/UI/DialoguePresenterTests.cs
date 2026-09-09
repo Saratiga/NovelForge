@@ -150,5 +150,77 @@ namespace NovelForge.UI.Tests
             LogAssert.Expect(LogType.Error, "NovelForge: DialoguePresenter is missing dialogueBox — skipping line.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(presenter.ShowLine("alice", "Hi.", "happy", "left")));
         }
+
+        [Test]
+        public void ShowLine_MissingLibrary_LogsMissingLibraryErrorAndUsesIdAsFallbackName()
+        {
+            var dialogueBox = CreateDialogueBox();
+            var presenter = CreatePresenter(null, dialogueBox, null);
+
+            LogAssert.Expect(LogType.Error, "NovelForge: DialoguePresenter is missing library — showing text without actor.");
+            CoroutineTestUtil.RunToCompletion(presenter.ShowLine("bob", "Hi.", "happy", "left"));
+
+            Assert.AreEqual("bob", dialogueBox.nameText.text);
+            Assert.AreEqual("Hi.", dialogueBox.bodyText.text);
+        }
+
+        [Test]
+        public void ShowLine_PositionSlotWithNoActorViewAssigned_LogsDistinctError()
+        {
+            var library = CreateLibrary();
+            var dialogueBox = CreateDialogueBox();
+            var presenter = CreatePresenter(library, dialogueBox, null);
+            presenter.positionSlots = new[] { new DialoguePresenter.PositionSlot { position = "left", view = null } };
+
+            LogAssert.Expect(LogType.Error, "NovelForge: position slot 'left' has no ActorView assigned — skipping actor display.");
+            CoroutineTestUtil.RunToCompletion(presenter.ShowLine("alice", "Hi.", "happy", "left"));
+
+            Assert.AreEqual("Alice", dialogueBox.nameText.text);
+        }
+
+        [Test]
+        public void ShowLine_NullEmotion_DoesNotLogAndLeavesActorUntouched()
+        {
+            var library = CreateLibrary();
+            var dialogueBox = CreateDialogueBox();
+            var actorView = CreateActorView();
+            var presenter = CreatePresenter(library, dialogueBox, actorView);
+
+            CoroutineTestUtil.RunToCompletion(presenter.ShowLine("alice", "Hi.", null, "left"));
+
+            Assert.AreEqual("Alice", dialogueBox.nameText.text);
+            Assert.AreEqual("Hi.", dialogueBox.bodyText.text);
+            Assert.IsNull(actorView.spriteRenderer.sprite);
+        }
+
+        [Test]
+        public void ShowLine_EmptyEmotion_DoesNotLogAndLeavesActorUntouched()
+        {
+            var library = CreateLibrary();
+            var dialogueBox = CreateDialogueBox();
+            var actorView = CreateActorView();
+            var presenter = CreatePresenter(library, dialogueBox, actorView);
+
+            CoroutineTestUtil.RunToCompletion(presenter.ShowLine("alice", "Hi.", "", "left"));
+
+            Assert.AreEqual("Alice", dialogueBox.nameText.text);
+            Assert.IsNull(actorView.spriteRenderer.sprite);
+        }
+
+        [Test]
+        public void ShowLine_ForPlainTagLessDialogueLine_ThroughRealParserAndPlaybackController_LogsNoError()
+        {
+            var script = new ScriptCompiler().Compile("alice: Как дела?\n");
+            var library = CreateLibrary();
+            var dialogueBox = CreateDialogueBox();
+            var presenter = CreatePresenter(library, dialogueBox, null);
+            var context = new StoryContext { Dialogue = presenter };
+            var controller = new PlaybackController(script, context);
+
+            CoroutineTestUtil.RunToCompletion(controller.RunAll());
+
+            Assert.AreEqual("Alice", dialogueBox.nameText.text);
+            Assert.AreEqual("Как дела?", dialogueBox.bodyText.text);
+        }
     }
 }

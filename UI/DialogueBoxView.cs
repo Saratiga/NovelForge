@@ -16,7 +16,7 @@ namespace NovelForge.UI
         internal IDeltaTimeSource TimeSource = new UnityDeltaTimeSource();
         internal IAdvanceInputSource AdvanceInput;
 
-        private void Awake()
+        internal void Awake()
         {
             if (AdvanceInput == null && advanceButton != null)
                 AdvanceInput = new ButtonAdvanceInputSource(advanceButton);

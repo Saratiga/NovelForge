@@ -4,6 +4,7 @@ using NovelForge.Runtime.Tests;
 using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace NovelForge.UI.Tests
 {
@@ -132,6 +133,21 @@ namespace NovelForge.UI.Tests
             CoroutineTestUtil.RunToCompletion(view.ShowText("Alice", Color.white, "Hi"));
 
             Assert.AreEqual("Hi", view.bodyText.text);
+        }
+
+        [Test]
+        public void Awake_WiresButtonAdvanceInputSourceToRealButton()
+        {
+            var go = CreateTracked("DialogueBoxView");
+            var view = go.AddComponent<DialogueBoxView>();
+            var buttonGo = CreateTracked("AdvanceButton");
+            view.advanceButton = buttonGo.AddComponent<Button>();
+            view.AdvanceInput = null;
+
+            view.Awake();
+            view.advanceButton.onClick.Invoke();
+
+            Assert.IsTrue(view.AdvanceInput.ConsumeAdvanceRequest());
         }
     }
 }
