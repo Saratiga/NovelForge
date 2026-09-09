@@ -93,5 +93,88 @@ namespace NovelForge.Runtime.Tests
 
             Assert.IsTrue(controller.IsFinished);
         }
+
+        [Test]
+        public void CreateSnapshot_CapturesPointerAndCallStackTopFirst()
+        {
+            var commands = new Command[]
+            {
+                new RecordingPointerCommand(p => { p.Push(10); p.Push(20); }),
+            };
+            var script = new NovelScript(commands, new Dictionary<string, int>());
+            var controller = new PlaybackController(script, new StoryContext());
+
+            CoroutineTestUtil.RunToCompletion(controller.RunAll());
+            var snapshot = controller.CreateSnapshot();
+
+            Assert.AreEqual(1, snapshot.PointerIndex);
+            CollectionAssert.AreEqual(new[] { 20, 10 }, snapshot.CallStack);
+        }
+
+        [Test]
+        public void RestoreSnapshot_ThenContinuing_PopsCallStackInOriginalOrder()
+        {
+            var popped = new List<int>();
+            var commands = new Command[]
+            {
+                new RecordingPointerCommand(p => { }),
+                new RecordingPointerCommand(p =>
+                {
+                    p.TryPop(out int a);
+                    popped.Add(a);
+                    p.TryPop(out int b);
+                    popped.Add(b);
+                }),
+            };
+            var script = new NovelScript(commands, new Dictionary<string, int>());
+            var controller = new PlaybackController(script, new StoryContext());
+            var snapshot = new PlaybackSnapshot { PointerIndex = 1, CallStack = new[] { 20, 10 } };
+
+            controller.RestoreSnapshot(snapshot);
+            CoroutineTestUtil.RunToCompletion(controller.RunAll());
+
+            CollectionAssert.AreEqual(new[] { 20, 10 }, popped);
+            Assert.IsTrue(controller.IsFinished);
+        }
+
+        [Test]
+        public void CreateSnapshot_ThenRestoreSnapshotOnFreshController_ReproducesSameContinuation()
+        {
+            // Full round trip: run only the "push" step of a script (stopping there by
+            // manually draining one command via the same nested-IEnumerator recursion
+            // CoroutineTestUtil itself uses — RunAll's `yield return StepOnce()` composition
+            // does not auto-drive its own nested enumerator, so a bare MoveNext() alone
+            // would only hand back StepOnce()'s enumerator without running it), snapshot
+            // it, feed that snapshot into a brand-new controller for the same script, and
+            // confirm continuing from there pops the call stack in the original order.
+            var popped = new List<int>();
+            var commands = new Command[]
+            {
+                new RecordingPointerCommand(p => { p.Push(10); p.Push(20); }),
+                new RecordingPointerCommand(p =>
+                {
+                    p.TryPop(out int a);
+                    popped.Add(a);
+                    p.TryPop(out int b);
+                    popped.Add(b);
+                }),
+            };
+            var script = new NovelScript(commands, new Dictionary<string, int>());
+            var firstController = new PlaybackController(script, new StoryContext());
+
+            IEnumerator routine = firstController.RunAll();
+            routine.MoveNext();
+            if (routine.Current is IEnumerator nested)
+                CoroutineTestUtil.RunToCompletion(nested);
+
+            var snapshot = firstController.CreateSnapshot();
+            Assert.AreEqual(1, snapshot.PointerIndex);
+
+            var secondController = new PlaybackController(script, new StoryContext());
+            secondController.RestoreSnapshot(snapshot);
+            CoroutineTestUtil.RunToCompletion(secondController.RunAll());
+
+            CollectionAssert.AreEqual(new[] { 20, 10 }, popped);
+        }
     }
 }

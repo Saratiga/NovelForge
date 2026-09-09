@@ -17,6 +17,18 @@ namespace NovelForge.Runtime
         public int CurrentIndex => _pointer.Current;
         public bool IsFinished => _pointer.Current >= _script.Commands.Count;
 
+        public PlaybackSnapshot CreateSnapshot() => new PlaybackSnapshot
+        {
+            PointerIndex = _pointer.Current,
+            CallStack = _pointer.ExportCallStack(),
+        };
+
+        public void RestoreSnapshot(PlaybackSnapshot snapshot)
+        {
+            _pointer.Current = snapshot.PointerIndex;
+            _pointer.RestoreCallStack(snapshot.CallStack);
+        }
+
         public IEnumerator RunAll()
         {
             while (!IsFinished)

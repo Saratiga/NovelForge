@@ -27,5 +27,17 @@ namespace NovelForge.Runtime
         public void Push(int returnIndex) => _callStack.Push(returnIndex);
 
         public bool TryPop(out int returnIndex) => _callStack.TryPop(out returnIndex);
+
+        // Same "internal, same-assembly only" reasoning as Moved/ResetMoved above:
+        // only PlaybackController's snapshot/restore needs raw access to the call
+        // stack's contents, so IStoryPointer stays untouched here too.
+        internal int[] ExportCallStack() => _callStack.ToArray();
+
+        internal void RestoreCallStack(IReadOnlyList<int> saved)
+        {
+            _callStack.Clear();
+            for (int i = saved.Count - 1; i >= 0; i--)
+                _callStack.Push(saved[i]);
+        }
     }
 }
