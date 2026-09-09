@@ -18,5 +18,14 @@ namespace NovelForge.Runtime
         public bool GetBool(string name) => _values.TryGetValue(name, out var v) ? Convert.ToBoolean(v) : false;
 
         public string GetString(string name) => _values.TryGetValue(name, out var v) ? v.ToString() : string.Empty;
+
+        public IReadOnlyDictionary<string, object> Export() => new Dictionary<string, object>(_values);
+
+        public void Import(IReadOnlyDictionary<string, object> values)
+        {
+            _values.Clear();
+            foreach (var pair in values)
+                _values[pair.Key] = pair.Value;
+        }
     }
 }
