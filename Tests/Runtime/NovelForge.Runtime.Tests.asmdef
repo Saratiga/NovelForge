@@ -2,7 +2,8 @@
     "name": "NovelForge.Runtime.Tests",
     "rootNamespace": "NovelForge.Runtime.Tests",
     "references": [
-        "NovelForge.Runtime"
+        "NovelForge.Runtime",
+        "Newtonsoft.Json"
     ],
     "includePlatforms": [
         "Editor"
@@ -11,7 +12,8 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
