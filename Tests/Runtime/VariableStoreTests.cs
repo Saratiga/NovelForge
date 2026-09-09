@@ -96,5 +96,16 @@ namespace NovelForge.Runtime.Tests
             Assert.AreEqual(4, exported.Count);
             Assert.AreEqual(3, exported["relationship"]);
         }
+
+        [Test]
+        public void Import_Null_ClearsAllValuesAndDoesNotThrow()
+        {
+            var store = new VariableStore();
+            store.Set("stale", 1);
+
+            Assert.DoesNotThrow(() => store.Import(null));
+
+            Assert.IsFalse(store.TryGet("stale", out _));
+        }
     }
 }

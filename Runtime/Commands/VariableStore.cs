@@ -24,6 +24,8 @@ namespace NovelForge.Runtime
         public void Import(IReadOnlyDictionary<string, object> values)
         {
             _values.Clear();
+            if (values == null)
+                return;
             foreach (var pair in values)
                 _values[pair.Key] = pair.Value;
         }

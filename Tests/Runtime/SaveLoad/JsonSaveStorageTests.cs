@@ -100,5 +100,19 @@ namespace NovelForge.Runtime.Tests
             Assert.AreEqual(SaveLoadStatus.Incompatible, result.Status);
             Assert.AreEqual(-1, result.FoundSchemaVersion);
         }
+
+        [Test]
+        public void Load_EmptyFile_LogsErrorAndReturnsIncompatible()
+        {
+            var storage = CreateStorage();
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(Path.Combine(_directory, "slot1.json"), "");
+
+            LogAssert.Expect(LogType.Error, "NovelForge: save slot 'slot1' is empty or malformed.");
+            var result = storage.Load("slot1");
+
+            Assert.AreEqual(SaveLoadStatus.Incompatible, result.Status);
+            Assert.AreEqual(-1, result.FoundSchemaVersion);
+        }
     }
 }

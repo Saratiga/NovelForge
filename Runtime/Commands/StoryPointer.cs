@@ -36,6 +36,8 @@ namespace NovelForge.Runtime
         internal void RestoreCallStack(IReadOnlyList<int> saved)
         {
             _callStack.Clear();
+            if (saved == null)
+                return;
             for (int i = saved.Count - 1; i >= 0; i--)
                 _callStack.Push(saved[i]);
         }

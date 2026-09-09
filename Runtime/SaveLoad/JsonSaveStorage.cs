@@ -43,6 +43,12 @@ namespace NovelForge.Runtime
                 return new SaveLoadResult { Status = SaveLoadStatus.Incompatible, FoundSchemaVersion = -1 };
             }
 
+            if (data == null)
+            {
+                Debug.LogError($"NovelForge: save slot '{slotId}' is empty or malformed.");
+                return new SaveLoadResult { Status = SaveLoadStatus.Incompatible, FoundSchemaVersion = -1 };
+            }
+
             if (data.SchemaVersion != CurrentSchemaVersion)
                 return new SaveLoadResult { Status = SaveLoadStatus.Incompatible, FoundSchemaVersion = data.SchemaVersion };
 

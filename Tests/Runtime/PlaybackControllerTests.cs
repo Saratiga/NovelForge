@@ -176,5 +176,22 @@ namespace NovelForge.Runtime.Tests
 
             CollectionAssert.AreEqual(new[] { 20, 10 }, popped);
         }
+
+        [Test]
+        public void RestoreSnapshot_WithNullCallStack_ClearsStackAndDoesNotThrow()
+        {
+            var commands = new Command[]
+            {
+                new RecordingPointerCommand(p => { }),
+            };
+            var script = new NovelScript(commands, new Dictionary<string, int>());
+            var controller = new PlaybackController(script, new StoryContext());
+            var snapshot = new PlaybackSnapshot { PointerIndex = 0, CallStack = null };
+
+            Assert.DoesNotThrow(() => controller.RestoreSnapshot(snapshot));
+            CoroutineTestUtil.RunToCompletion(controller.RunAll());
+
+            Assert.IsTrue(controller.IsFinished);
+        }
     }
 }
