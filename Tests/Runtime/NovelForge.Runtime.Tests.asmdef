@@ -2,8 +2,7 @@
     "name": "NovelForge.Runtime.Tests",
     "rootNamespace": "NovelForge.Runtime.Tests",
     "references": [
-        "NovelForge.Runtime",
-        "Newtonsoft.Json"
+        "NovelForge.Runtime"
     ],
     "includePlatforms": [
         "Editor"

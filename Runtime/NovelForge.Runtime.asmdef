@@ -1,16 +1,12 @@
 {
     "name": "NovelForge.Runtime",
     "rootNamespace": "NovelForge.Runtime",
-    "references": [
-        "Newtonsoft.Json"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
-    "precompiledReferences": [
-        "Newtonsoft.Json.dll"
-    ],
+    "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
