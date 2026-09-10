@@ -23,11 +23,11 @@ Save/Load и Localization обе трогали уже смерженный ко
 
 Новая сборка `Editor/NovelForge.Editor.asmdef` — editor-only (`"includePlatforms": ["Editor"]`), `"references": ["NovelForge.Runtime"]`. Первая Editor-сборка в проекте.
 
-- **`Editor/NovelScriptAsset.cs`**:
+- **`Runtime/Parsing/NovelScriptAsset.cs`**:
   ```csharp
   using UnityEngine;
 
-  namespace NovelForge.Editor
+  namespace NovelForge.Runtime
   {
       public class NovelScriptAsset : ScriptableObject
       {
@@ -37,6 +37,8 @@ Save/Load и Localization обе трогали уже смерженный ко
   }
   ```
   Публичное поле, не `[SerializeField] private` со свойством — игра читает `Source` напрямую для собственного вызова `ScriptCompiler.Compile(...)`; это не "конфигурационный" ассет со скрытой логикой, а простой контейнер текста.
+
+  Ассет живёт в `NovelForge.Runtime`, а не в `NovelForge.Editor` — вывод по итогам финального ревью: раз игра должна уметь навесить на него `[SerializeField]` и сериализовать ссылку, класс обязан жить в обычной (не editor-only) сборке, потому что non-editor сборка не может ссылаться на editor-only сборку — в билде плеера её попросту нет. `[TextArea]` — плейн-атрибут `UnityEngine`, доступен в runtime-сборках без проблем, так что перенос не добавляет новых зависимостей.
 
 - **`Editor/NovelScriptImporter.cs`**:
   ```csharp

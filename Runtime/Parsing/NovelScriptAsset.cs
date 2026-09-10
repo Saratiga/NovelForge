@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace NovelForge.Editor
+namespace NovelForge.Runtime
 {
     public class NovelScriptAsset : ScriptableObject
     {

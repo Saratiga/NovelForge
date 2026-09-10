@@ -1,4 +1,5 @@
 using System.IO;
+using NovelForge.Runtime;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
