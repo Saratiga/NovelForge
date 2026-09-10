@@ -13,10 +13,10 @@ namespace NovelForge.Editor
         private const string TextAreaControlName = "NovelScriptEditorTextArea";
         private static readonly Dictionary<string, NovelScriptEditorWindow> OpenWindows = new();
 
-        private string _assetPath;
-        private string _text = string.Empty;
+        [SerializeField] private string _assetPath;
+        [SerializeField] private string _text = string.Empty;
         private string _lastParsedText;
-        private bool _isDirty;
+        [SerializeField] private bool _isDirty;
         private ParseException _currentError;
 
         // Unity 6000.5+ deprecated the int-based instanceID overloads used across the Editor API
@@ -56,6 +56,12 @@ namespace NovelForge.Editor
         {
             string fileName = Path.GetFileName(_assetPath);
             titleContent = new GUIContent(_isDirty ? fileName + " *" : fileName);
+        }
+
+        private void OnEnable()
+        {
+            if (!string.IsNullOrEmpty(_assetPath))
+                OpenWindows[_assetPath] = this;
         }
 
         private void OnLostFocus() => SaveIfDirty();
@@ -112,6 +118,10 @@ namespace NovelForge.Editor
             editStyle.normal.textColor = Color.clear;
             editStyle.focused.textColor = Color.clear;
             editStyle.active.textColor = Color.clear;
+            editStyle.normal.background = null;
+            editStyle.focused.background = null;
+            editStyle.active.background = null;
+            editStyle.hover.background = null;
 
             GUI.SetNextControlName(TextAreaControlName);
             string newText = EditorGUI.TextArea(rect, _text, editStyle);
@@ -131,7 +141,7 @@ namespace NovelForge.Editor
                 return;
             }
 
-            EditorGUILayout.HelpBox($"Line {_currentError.LineNumber}: {_currentError.Message}", MessageType.Error);
+            EditorGUILayout.HelpBox(_currentError.Message, MessageType.Error);
             if (GUILayout.Button("Go to line", GUILayout.Width(100)))
                 JumpToLine(_currentError.LineNumber);
         }

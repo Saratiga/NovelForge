@@ -759,7 +759,7 @@ namespace NovelForge.Editor
                 return;
             }
 
-            EditorGUILayout.HelpBox($"Line {_currentError.LineNumber}: {_currentError.Message}", MessageType.Error);
+            EditorGUILayout.HelpBox(_currentError.Message, MessageType.Error);
             if (GUILayout.Button("Go to line", GUILayout.Width(100)))
                 JumpToLine(_currentError.LineNumber);
         }
