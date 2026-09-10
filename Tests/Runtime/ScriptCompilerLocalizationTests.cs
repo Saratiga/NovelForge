@@ -83,6 +83,21 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void DialogueLine_WithEmotionIdAndPosition_ParsesAllThreeAndUsesExplicitId()
+        {
+            var script = new ScriptCompiler().Compile("Alice: Привет! #happy @greet left\n");
+            var dialogue = new RecordingDialoguePresenter();
+            var context = new StoryContext { Dialogue = dialogue, Localization = LocalizationTable.FromJson("{\"greet\": \"Hi!\"}") };
+
+            CoroutineTestUtil.RunToCompletion(script.Commands[0].Execute(context, new StoryPointer()));
+
+            var recorded = dialogue.Calls[0];
+            Assert.AreEqual("Hi!", recorded.text);
+            Assert.AreEqual("happy", recorded.emotion);
+            Assert.AreEqual("left", recorded.position);
+        }
+
+        [Test]
         public void DuplicateExplicitId_ThrowsParseException()
         {
             var ex = Assert.Throws<ParseException>(() =>

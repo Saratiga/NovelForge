@@ -270,7 +270,10 @@ namespace NovelForge.Runtime
                 text = text.Remove(emotionMatch.Index, emotionMatch.Length).TrimEnd();
             }
 
-            var idMatch = Regex.Match(text, @"@(\w+)");
+            // Anchored to a whitespace-delimited token and restricted to the same
+            // identifier grammar as ChoiceOptionLine's @id, so this can't misfire on an
+            // "@" embedded mid-word (e.g. an email address like "bob@example.com").
+            var idMatch = Regex.Match(text, @"(?<=^|\s)@([A-Za-z_][A-Za-z0-9_]*)\b");
             if (idMatch.Success)
             {
                 id = idMatch.Groups[1].Value;

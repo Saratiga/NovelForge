@@ -21,7 +21,7 @@
 
 ```
 label greet
-Alice#happy: Привет! left
+Alice: Привет! #happy left
 Alice: Как дела? @custom_greet_check
 choice
   "Хорошо" @choice_good -> good_path
