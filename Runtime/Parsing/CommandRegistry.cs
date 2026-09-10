@@ -10,6 +10,8 @@ namespace NovelForge.Runtime
 
         public void Register(string commandName, Func<string, Command> factory) => _factories[commandName] = factory;
 
+        public IReadOnlyCollection<string> RegisteredNames => _factories.Keys;
+
         public bool TryCreate(string commandName, string rawArgs, out Command command)
         {
             if (_factories.TryGetValue(commandName, out var factory))
