@@ -647,10 +647,15 @@ namespace NovelForge.Editor
         private bool _isDirty;
         private ParseException _currentError;
 
+        // Unity 6000.5+ deprecated the int-based instanceID overloads used across the Editor API
+        // (EditorUtility.InstanceIDToObject, AssetDatabase.GetAssetPath(int), and the implicit
+        // int->EntityId conversion are all hard compile errors as of this Unity version). The
+        // [OnOpenAsset] reflection invoker accepts an EntityId-typed first parameter in place of
+        // the historical int, which sidesteps the obsolete conversion entirely.
         [OnOpenAsset(1)]
-        public static bool OnOpenAsset(int instanceId, int line)
+        public static bool OnOpenAsset(EntityId instanceId, int line)
         {
-            if (EditorUtility.InstanceIDToObject(instanceId) is not NovelScriptAsset)
+            if (EditorUtility.EntityIdToObject(instanceId) is not NovelScriptAsset)
                 return false;
 
             Open(AssetDatabase.GetAssetPath(instanceId));
@@ -767,7 +772,9 @@ namespace NovelForge.Editor
             _lastParsedText = _text;
             try
             {
-                new ScriptCompiler().Compile(_text);
+                // Fully qualified: Unity 6000.6 introduced its own UnityEditor.ScriptCompiler type,
+                // which collides with NovelForge.Runtime.ScriptCompiler given this file's usings.
+                new NovelForge.Runtime.ScriptCompiler().Compile(_text);
                 _currentError = null;
             }
             catch (ParseException e)
