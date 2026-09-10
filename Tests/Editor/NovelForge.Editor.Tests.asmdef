@@ -1,0 +1,21 @@
+{
+    "name": "NovelForge.Editor.Tests",
+    "rootNamespace": "NovelForge.Editor.Tests",
+    "references": [
+        "NovelForge.Runtime",
+        "NovelForge.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
