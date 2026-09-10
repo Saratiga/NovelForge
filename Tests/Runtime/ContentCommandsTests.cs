@@ -11,7 +11,7 @@ namespace NovelForge.Runtime.Tests
         {
             var dialogue = new RecordingDialoguePresenter();
             var context = new StoryContext { Dialogue = dialogue };
-            var command = new SayLineCommand("Alice", "Привет!", "happy", "left");
+            var command = new SayLineCommand("Alice", "Привет!", "happy", "left", "line_1");
 
             CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer()));
 
@@ -83,7 +83,7 @@ namespace NovelForge.Runtime.Tests
         public void SayLine_NullDialoguePresenter_LogsErrorAndDoesNotThrow()
         {
             var context = new StoryContext();
-            var command = new SayLineCommand("Alice", "Привет!", "happy", "left");
+            var command = new SayLineCommand("Alice", "Привет!", "happy", "left", "line_1");
 
             LogAssert.Expect(LogType.Error, "NovelForge: no IDialoguePresenter wired — skipping dialogue line.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
@@ -137,6 +137,33 @@ namespace NovelForge.Runtime.Tests
 
             LogAssert.Expect(LogType.Error, "NovelForge: no ITimingPresenter wired — skipping wait.");
             Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer())));
+        }
+
+        [Test]
+        public void SayLine_WithLocalizationTableAndMatchingId_UsesTranslatedText()
+        {
+            var dialogue = new RecordingDialoguePresenter();
+            var localization = LocalizationTable.FromJson("{\"greet_1\": \"Привет!\"}");
+            var context = new StoryContext { Dialogue = dialogue, Localization = localization };
+            var command = new SayLineCommand("Alice", "Hello!", "happy", "left", "greet_1");
+
+            CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer()));
+
+            Assert.AreEqual("Привет!", dialogue.Calls[0].text);
+        }
+
+        [Test]
+        public void SayLine_WithLocalizationTableAndMissingId_FallsBackToSourceTextAndLogsWarning()
+        {
+            var dialogue = new RecordingDialoguePresenter();
+            var localization = LocalizationTable.FromJson("{}");
+            var context = new StoryContext { Dialogue = dialogue, Localization = localization };
+            var command = new SayLineCommand("Alice", "Hello!", "happy", "left", "greet_1");
+
+            LogAssert.Expect(LogType.Warning, "NovelForge: no translation for line id 'greet_1' — falling back to source text.");
+            CoroutineTestUtil.RunToCompletion(command.Execute(context, new StoryPointer()));
+
+            Assert.AreEqual("Hello!", dialogue.Calls[0].text);
         }
     }
 }

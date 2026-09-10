@@ -7,11 +7,13 @@ namespace NovelForge.Runtime
     public class ChoiceCommand : Command
     {
         private readonly IReadOnlyList<string> _optionTexts;
+        private readonly IReadOnlyList<string> _optionIds;
         private readonly int[] _targetIndices;
 
-        public ChoiceCommand(IReadOnlyList<string> optionTexts, int optionCount)
+        public ChoiceCommand(IReadOnlyList<string> optionTexts, IReadOnlyList<string> optionIds, int optionCount)
         {
             _optionTexts = optionTexts;
+            _optionIds = optionIds;
             _targetIndices = new int[optionCount];
         }
 
@@ -27,7 +29,7 @@ namespace NovelForge.Runtime
             }
 
             int selected = -1;
-            yield return context.Choices.PresentChoices(_optionTexts, i => selected = i);
+            yield return context.Choices.PresentChoices(ResolveTexts(context), i => selected = i);
 
             if (selected < 0 || selected >= _targetIndices.Length)
             {
@@ -36,6 +38,27 @@ namespace NovelForge.Runtime
             }
 
             pointer.Current = _targetIndices[selected];
+        }
+
+        private IReadOnlyList<string> ResolveTexts(StoryContext context)
+        {
+            if (context.Localization == null)
+                return _optionTexts;
+
+            var resolved = new string[_optionTexts.Count];
+            for (int i = 0; i < _optionTexts.Count; i++)
+            {
+                if (context.Localization.TryGetText(_optionIds[i], out string translated))
+                {
+                    resolved[i] = translated;
+                }
+                else
+                {
+                    Debug.LogWarning($"NovelForge: no translation for line id '{_optionIds[i]}' — falling back to source text.");
+                    resolved[i] = _optionTexts[i];
+                }
+            }
+            return resolved;
         }
     }
 }

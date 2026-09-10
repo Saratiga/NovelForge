@@ -10,7 +10,7 @@ namespace NovelForge.Runtime
         private static readonly Regex DialogueLine = new(@"^([A-Za-z_][A-Za-z0-9_]*):\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex SetLine = new(@"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|\+=|-=)\s*(.+)$", RegexOptions.Compiled);
         private static readonly Regex IfLine = new(@"^if\s+([A-Za-z_][A-Za-z0-9_]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$", RegexOptions.Compiled);
-        private static readonly Regex ChoiceOptionLine = new(@"^""([^""]*)""\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
+        private static readonly Regex ChoiceOptionLine = new(@"^""([^""]*)""(?:\s*@([A-Za-z_][A-Za-z0-9_]*))?\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
 
         private readonly CommandRegistry _registry;
 
@@ -37,6 +37,14 @@ namespace NovelForge.Runtime
             var blockStack = new Stack<PendingBlock>();
             string pendingComment = null;
 
+            // Localization: every dialogue line and choice option gets a stable id, either
+            // explicit (@tag) or auto-generated as "<nearest label>_<ordinal>". usedIds
+            // enforces global uniqueness across the whole script (the translation table on
+            // disk is one flat dictionary); currentLabel/lineIdOrdinal track auto-id state.
+            var usedIds = new HashSet<string>();
+            string currentLabel = "_start";
+            int lineIdOrdinal = 0;
+
             string[] lines = source.Replace("\r\n", "\n").Split('\n');
 
             for (int lineNumber = 1; lineNumber <= lines.Length; lineNumber++)
@@ -58,6 +66,8 @@ namespace NovelForge.Runtime
                     if (labels.ContainsKey(name))
                         throw new ParseException(lineNumber, $"Duplicate label '{name}'.");
                     labels[name] = commands.Count;
+                    currentLabel = name;
+                    lineIdOrdinal = 0;
                     pendingComment = null;
                     continue;
                 }
@@ -114,7 +124,7 @@ namespace NovelForge.Runtime
 
                 if (line == "choice")
                 {
-                    var options = new List<(string text, string labelName)>();
+                    var options = new List<(string text, string id, string labelName)>();
                     int lookahead = lineNumber;
                     while (lookahead < lines.Length)
                     {
@@ -127,13 +137,18 @@ namespace NovelForge.Runtime
                         var optionMatch = ChoiceOptionLine.Match(nextLine);
                         if (!optionMatch.Success)
                             break;
-                        options.Add((optionMatch.Groups[1].Value, optionMatch.Groups[2].Value));
+                        string explicitOptionId = optionMatch.Groups[2].Success ? optionMatch.Groups[2].Value : null;
+                        options.Add((optionMatch.Groups[1].Value, explicitOptionId, optionMatch.Groups[3].Value));
                         lookahead++;
                     }
                     if (options.Count == 0)
                         throw new ParseException(lineNumber, "'choice' has no options.");
 
-                    var choiceCommand = new ChoiceCommand(options.ConvertAll(o => o.text), options.Count);
+                    var optionIds = new string[options.Count];
+                    for (int i = 0; i < options.Count; i++)
+                        optionIds[i] = AllocateId(options[i].id, ref lineIdOrdinal, currentLabel, usedIds, lineNumber);
+
+                    var choiceCommand = new ChoiceCommand(options.ConvertAll(o => o.text), optionIds, options.Count);
                     for (int i = 0; i < options.Count; i++)
                         pendingLabelRefs.Add((commands.Count, options[i].labelName, i, lineNumber));
                     commands.Add(Attach(choiceCommand, ref pendingComment));
@@ -173,8 +188,9 @@ namespace NovelForge.Runtime
                 if (dialogueMatch.Success)
                 {
                     string characterId = dialogueMatch.Groups[1].Value;
-                    (string text, string emotion, string position) = ParseDialogueRest(dialogueMatch.Groups[2].Value);
-                    commands.Add(Attach(new SayLineCommand(characterId, text, emotion, position), ref pendingComment));
+                    (string text, string emotion, string position, string explicitId) = ParseDialogueRest(dialogueMatch.Groups[2].Value);
+                    string lineId = AllocateId(explicitId, ref lineIdOrdinal, currentLabel, usedIds, lineNumber);
+                    commands.Add(Attach(new SayLineCommand(characterId, text, emotion, position, lineId), ref pendingComment));
                     continue;
                 }
 
@@ -231,10 +247,20 @@ namespace NovelForge.Runtime
             return command;
         }
 
-        private static (string text, string emotion, string position) ParseDialogueRest(string rest)
+        private static string AllocateId(string explicitId, ref int ordinal, string currentLabel, HashSet<string> usedIds, int lineNumber)
+        {
+            ordinal++;
+            string id = explicitId ?? $"{currentLabel}_{ordinal}";
+            if (!usedIds.Add(id))
+                throw new ParseException(lineNumber, $"Duplicate localization id '{id}'.");
+            return id;
+        }
+
+        private static (string text, string emotion, string position, string id) ParseDialogueRest(string rest)
         {
             string emotion = null;
             string position = null;
+            string id = null;
             string text = rest;
 
             var emotionMatch = Regex.Match(text, @"#(\w+)");
@@ -242,6 +268,13 @@ namespace NovelForge.Runtime
             {
                 emotion = emotionMatch.Groups[1].Value;
                 text = text.Remove(emotionMatch.Index, emotionMatch.Length).TrimEnd();
+            }
+
+            var idMatch = Regex.Match(text, @"@(\w+)");
+            if (idMatch.Success)
+            {
+                id = idMatch.Groups[1].Value;
+                text = text.Remove(idMatch.Index, idMatch.Length).TrimEnd();
             }
 
             // Known limitation: dialogue that legitimately ends in the literal word
@@ -258,7 +291,7 @@ namespace NovelForge.Runtime
                 }
             }
 
-            return (text.Trim(), emotion, position);
+            return (text.Trim(), emotion, position, id);
         }
 
         private static ComparisonOperator ParseComparisonOperator(string token, int lineNumber) => token switch
