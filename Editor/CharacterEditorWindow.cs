@@ -158,8 +158,15 @@ namespace NovelForge.Editor
                 {
                     var sprite = spriteProp.objectReferenceValue as Sprite;
                     Rect previewRect = GUILayoutUtility.GetRect(40, 40, GUILayout.Width(40));
-                    if (sprite != null)
-                        EditorGUI.DrawPreviewTexture(previewRect, sprite.texture);
+                    if (sprite != null && sprite.texture != null)
+                    {
+                        Rect uv = new Rect(
+                            sprite.rect.x / sprite.texture.width,
+                            sprite.rect.y / sprite.texture.height,
+                            sprite.rect.width / sprite.texture.width,
+                            sprite.rect.height / sprite.texture.height);
+                        GUI.DrawTextureWithTexCoords(previewRect, sprite.texture, uv);
+                    }
                     else
                         EditorGUI.DrawRect(previewRect, new Color(0f, 0f, 0f, 0.1f));
 
