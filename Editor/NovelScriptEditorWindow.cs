@@ -15,9 +15,11 @@ namespace NovelForge.Editor
 
         [SerializeField] private string _assetPath;
         [SerializeField] private string _text = string.Empty;
-        private string _lastParsedText;
         [SerializeField] private bool _isDirty;
+        [SerializeField] private bool _previewMode;
+        private string _lastParsedText;
         private ParseException _currentError;
+        private Vector2 _scrollPosition;
 
         // Unity 6000.5+ deprecated the int-based instanceID overloads used across the Editor API
         // (EditorUtility.InstanceIDToObject, AssetDatabase.GetAssetPath(int), and the implicit
@@ -47,6 +49,7 @@ namespace NovelForge.Editor
             window._text = File.ReadAllText(assetPath);
             window._lastParsedText = null;
             window._isDirty = false;
+            window._previewMode = false;
             window.UpdateTitle();
             OpenWindows[assetPath] = window;
             window.Show();
@@ -78,13 +81,18 @@ namespace NovelForge.Editor
             HandleKeyboardShortcuts();
             ReparseIfNeeded();
 
-            EditorGUILayout.LabelField(_assetPath, EditorStyles.miniLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(_assetPath, EditorStyles.miniLabel);
+                _previewMode = GUILayout.Toggle(_previewMode, "Preview", EditorStyles.toolbarButton, GUILayout.Width(70));
+            }
 
-            const float errorPanelHeight = 60f;
-            Rect textAreaRect = GUILayoutUtility.GetRect(
-                position.width, position.height - errorPanelHeight - 20f,
-                GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-            DrawHighlightedTextArea(textAreaRect);
+            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
+            if (_previewMode)
+                DrawPreview();
+            else
+                DrawEditableTextArea();
+            EditorGUILayout.EndScrollView();
 
             DrawErrorPanel();
         }
@@ -109,28 +117,30 @@ namespace NovelForge.Editor
             }
         }
 
-        private void DrawHighlightedTextArea(Rect rect)
+        // Two separate, single-purpose controls instead of a transparent EditorGUI.TextArea
+        // layered over a rich-text GUI.Label at the same Rect: that overlay combination proved
+        // unreliable in this environment (confirmed via the IMGUI Debugger — the draw
+        // instructions registered correctly, valid non-empty Rect, valid style, but the content
+        // never actually rendered on screen — root cause not conclusively identified). This
+        // design instead uses only plain, single-purpose EditorGUILayout controls, matching the
+        // ones already proven to render correctly elsewhere in this window (the path label, the
+        // error HelpBox, the "Go to line" button).
+        private void DrawEditableTextArea()
         {
-            var displayStyle = new GUIStyle(EditorStyles.textArea) { richText = true, wordWrap = true };
-            GUI.Label(rect, DslSyntaxHighlighter.ToRichText(_text), displayStyle);
-
-            var editStyle = new GUIStyle(displayStyle);
-            editStyle.normal.textColor = Color.clear;
-            editStyle.focused.textColor = Color.clear;
-            editStyle.active.textColor = Color.clear;
-            editStyle.normal.background = null;
-            editStyle.focused.background = null;
-            editStyle.active.background = null;
-            editStyle.hover.background = null;
-
             GUI.SetNextControlName(TextAreaControlName);
-            string newText = EditorGUI.TextArea(rect, _text, editStyle);
+            string newText = EditorGUILayout.TextArea(_text, GUILayout.ExpandHeight(true));
             if (newText != _text)
             {
                 _text = newText;
                 _isDirty = true;
                 UpdateTitle();
             }
+        }
+
+        private void DrawPreview()
+        {
+            var previewStyle = new GUIStyle(EditorStyles.textArea) { richText = true, wordWrap = true };
+            EditorGUILayout.LabelField(DslSyntaxHighlighter.ToRichText(_text), previewStyle, GUILayout.ExpandHeight(true));
         }
 
         private void DrawErrorPanel()
@@ -165,6 +175,11 @@ namespace NovelForge.Editor
 
         private void JumpToLine(int lineNumber)
         {
+            // "Go to line" only makes sense against the editable control — switch out of
+            // preview automatically so the user always lands somewhere they can actually see
+            // and act on the caret position.
+            _previewMode = false;
+
             string[] lines = _text.Replace("\r\n", "\n").Split('\n');
             int targetIndex = Mathf.Clamp(lineNumber - 1, 0, lines.Length - 1);
 

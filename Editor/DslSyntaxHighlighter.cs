@@ -100,10 +100,16 @@ namespace NovelForge.Editor
             return Render(line, spans);
         }
 
+        // No escaping: Unity's rich text tag parser does not decode HTML entities
+        // (&lt;/&gt;/&amp; display as those literal characters, not </>/&), so escaping
+        // this way would corrupt ordinary DSL syntax on screen — "->" (used on every
+        // choice-option line) would show as "-&gt;" instead of an arrow. '<'/'>'/'&' are
+        // otherwise inert to Unity's tag parser unless they form a complete recognized tag
+        // (<color=...>, <b>, etc.), which normal dialogue text is not expected to contain.
         private static string Render(string line, List<(int start, int length, string color)> spans)
         {
             if (spans.Count == 0)
-                return Escape(line);
+                return line;
 
             spans.Sort((a, b) => a.start.CompareTo(b.start));
 
@@ -113,18 +119,15 @@ namespace NovelForge.Editor
             {
                 if (span.start < cursor)
                     continue;
-                sb.Append(Escape(line.Substring(cursor, span.start - cursor)));
+                sb.Append(line, cursor, span.start - cursor);
                 sb.Append("<color=").Append(span.color).Append('>');
-                sb.Append(Escape(line.Substring(span.start, span.length)));
+                sb.Append(line, span.start, span.length);
                 sb.Append("</color>");
                 cursor = span.start + span.length;
             }
-            sb.Append(Escape(line.Substring(cursor)));
+            sb.Append(line, cursor, line.Length - cursor);
             return sb.ToString();
         }
-
-        private static string Escape(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
         private static string FirstWord(string trimmed)
         {

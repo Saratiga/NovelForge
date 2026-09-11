@@ -74,11 +74,24 @@ namespace NovelForge.Editor.Tests
         }
 
         [Test]
-        public void TextContainingAngleBracketsAndAmpersand_IsEscaped()
+        public void TextContainingAngleBracketsAndAmpersand_IsNotEscaped()
         {
+            // Unity's rich text tag parser does not decode HTML entities, so escaping
+            // '<'/'>'/'&' would display the literal entity text instead of the original
+            // characters — this would corrupt "->" (choice-option syntax) on every line
+            // that uses it. Plain, unescaped characters render correctly instead.
             string result = DslSyntaxHighlighter.ToRichText("Alice: 1 < 2 & 3 > 0");
 
-            StringAssert.Contains("1 &lt; 2 &amp; 3 &gt; 0", result);
+            StringAssert.Contains("1 < 2 & 3 > 0", result);
+        }
+
+        [Test]
+        public void ChoiceOptionLine_ArrowIsNotEscaped()
+        {
+            string result = DslSyntaxHighlighter.ToRichText("\"Yes\" -> yes_label");
+
+            StringAssert.Contains("->", result);
+            StringAssert.DoesNotContain("&gt;", result);
         }
     }
 }
