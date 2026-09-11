@@ -20,6 +20,15 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void SayLine_ExposesCharacterIdAndEmotionAsProperties()
+        {
+            var command = new SayLineCommand("Alice", "Привет!", "happy", "left", "line_1");
+
+            Assert.AreEqual("Alice", command.CharacterId);
+            Assert.AreEqual("happy", command.Emotion);
+        }
+
+        [Test]
         public void PlayMusic_DelegatesToAudioPresenter()
         {
             var audio = new RecordingAudioPresenter();

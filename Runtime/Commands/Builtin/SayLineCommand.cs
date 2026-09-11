@@ -20,6 +20,9 @@ namespace NovelForge.Runtime
             _lineId = lineId;
         }
 
+        public string CharacterId => _characterId;
+        public string Emotion => _emotion;
+
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
             if (context.Dialogue == null)
