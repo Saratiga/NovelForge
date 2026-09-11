@@ -10,7 +10,7 @@ namespace NovelForge.Editor
     public class CharacterEditorWindow : EditorWindow
     {
         private CharacterDefinition[] _allCharacters = Array.Empty<CharacterDefinition>();
-        private CharacterDefinition _selected;
+        [SerializeField] private CharacterDefinition _selected;
         private SerializedObject _selectedSerializedObject;
         private CharacterUsageValidator.Result _usageResult;
         private Vector2 _listScrollPosition;
@@ -36,7 +36,12 @@ namespace NovelForge.Editor
             return true;
         }
 
-        private void OnEnable() => RefreshCharacterList();
+        private void OnEnable()
+        {
+            RefreshCharacterList();
+            if (_selected != null)
+                SelectCharacter(_selected);
+        }
 
         private void OnFocus() => RefreshCharacterList();
 
