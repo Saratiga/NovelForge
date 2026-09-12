@@ -12,7 +12,13 @@ namespace NovelForge.Editor
 {
     public class NovelBranchGraphWindow : EditorWindow
     {
-        private string _assetPath;
+        // Plain private fields reset to default across a domain reload (any script recompile —
+        // constant during active development, not just when editing this window's own code) —
+        // confirmed live: reopening this exact window after touching an unrelated .cs file left
+        // it blank. [SerializeField] on the path plus reloading from disk in OnEnable restores
+        // it; OnDisable flushes any pending edit to disk first, the same pattern already fixed
+        // once in this project's history for CharacterEditorWindow.
+        [SerializeField] private string _assetPath;
         private string _text = string.Empty;
         private string _lastSavedText = string.Empty;
         private bool _isDirty;
@@ -66,25 +72,35 @@ namespace NovelForge.Editor
             titleContent = new GUIContent(_isDirty ? fileName + " *" : fileName);
         }
 
+        private void OnEnable()
+        {
+            if (!string.IsNullOrEmpty(_assetPath))
+                Load(_assetPath);
+        }
+
+        private void OnDisable() => SaveIfDirty();
+
         private void OnLostFocus() => SaveIfDirty();
 
         private void OnDestroy() => SaveIfDirty();
 
-        private void OnGUI()
-        {
-            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
-            {
-                if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(60)))
-                    SaveIfDirty();
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.LabelField(_assetPath, EditorStyles.miniLabel, GUILayout.Width(300));
-            }
-        }
-
+        // No OnGUI here deliberately — confirmed live that an IMGUI OnGUI toolbar is completely
+        // invisible/unreachable on a window whose rootVisualElement is populated (the UI Toolkit
+        // content draws over it entirely), so the toolbar has to be UI Toolkit too, built fresh
+        // alongside the graph on every rebuild.
         private void RebuildGraphView()
         {
-            if (_graphView != null)
-                rootVisualElement.Remove(_graphView);
+            rootVisualElement.Clear();
+
+            var toolbar = new UnityEditor.UIElements.Toolbar();
+            var saveButton = new UnityEditor.UIElements.ToolbarButton(SaveIfDirty) { text = "Save" };
+            toolbar.Add(saveButton);
+            var pathLabel = new Label(_assetPath);
+            pathLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            pathLabel.style.flexGrow = 1;
+            toolbar.Add(pathLabel);
+            rootVisualElement.Add(toolbar);
+
             _graphView = new BranchGraphView(this);
             _graphView.style.flexGrow = 1;
             rootVisualElement.Add(_graphView);
@@ -381,7 +397,10 @@ namespace NovelForge.Editor
 
             if (targetIndex < 0)
             {
-                sourcePort.AddToClassList("broken-reference");
+                // AddToClassList alone does nothing without a loaded USS stylesheet defining the
+                // class (confirmed live: no visual difference without this) — setting portColor
+                // directly is the simplest reliable way to tint a Port with no external asset.
+                sourcePort.portColor = new Color(0.9f, 0.3f, 0.1f);
                 return;
             }
 
@@ -389,7 +408,12 @@ namespace NovelForge.Editor
             sourcePort.Connect(edge);
             nodeViews[targetIndex].InputPort.Connect(edge);
             if (isDashed)
-                edge.AddToClassList("fall-through-edge");
+            {
+                // Same class-without-stylesheet gap as the broken-reference port — dim the
+                // edge instead so a fall-through is visually distinct from an explicit
+                // jump/gosub/choice edge without needing a USS asset.
+                edge.style.opacity = 0.4f;
+            }
             AddElement(edge);
         }
 
@@ -518,7 +542,8 @@ namespace NovelForge.Editor
 
         public void MarkUnreachable()
         {
-            titleContainer.AddToClassList("unreachable-node");
+            // Same class-without-stylesheet gap — tint the title bar directly.
+            titleContainer.style.backgroundColor = new StyleColor(new Color(0.55f, 0.35f, 0.05f));
         }
     }
 }
