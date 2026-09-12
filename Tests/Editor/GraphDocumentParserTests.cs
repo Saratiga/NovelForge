@@ -49,6 +49,18 @@ namespace NovelForge.Editor.Tests
         }
 
         [Test]
+        public void Parse_CommentAfterTrailingJump_IsPreservedInBody_NotDropped()
+        {
+            string source = "label a\nAlice: Bye!\nreturn\n// dangling comment\n\nlabel b\nAlice: Hi!\n";
+
+            var doc = GraphDocumentParser.Parse(source);
+
+            Assert.IsTrue(doc.Nodes[0].EndsInReturn);
+            StringAssert.Contains("// dangling comment", doc.Nodes[0].Body);
+            Assert.IsNull(doc.Nodes[1].LeadingComment);
+        }
+
+        [Test]
         public void Parse_TrailingChoiceBlock_ExtractsAllOptionsWithExplicitIdAndImplicit()
         {
             string source = "label a\nAlice: Pick one.\nchoice\n  \"Yes\" @yes_opt -> good\n  \"No\" -> bad\n";

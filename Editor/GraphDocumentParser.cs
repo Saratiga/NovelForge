@@ -205,13 +205,25 @@ namespace NovelForge.Editor
             string lastTrimmed = lines[lastContentIndex].Trim();
 
             if (lastTrimmed == "return")
-                return new GraphNode(labelName, JoinLines(lines, start, lastContentIndex), Array.Empty<ChoiceOption>(), null, false, true, leadingComment);
+            {
+                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
+                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
+                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), null, false, true, leadingComment);
+            }
 
             if (lastTrimmed.StartsWith("jump ", StringComparison.Ordinal))
-                return new GraphNode(labelName, JoinLines(lines, start, lastContentIndex), Array.Empty<ChoiceOption>(), lastTrimmed.Substring("jump ".Length).Trim(), false, false, leadingComment);
+            {
+                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
+                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
+                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), lastTrimmed.Substring("jump ".Length).Trim(), false, false, leadingComment);
+            }
 
             if (lastTrimmed.StartsWith("gosub ", StringComparison.Ordinal))
-                return new GraphNode(labelName, JoinLines(lines, start, lastContentIndex), Array.Empty<ChoiceOption>(), lastTrimmed.Substring("gosub ".Length).Trim(), true, false, leadingComment);
+            {
+                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
+                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
+                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), lastTrimmed.Substring("gosub ".Length).Trim(), true, false, leadingComment);
+            }
 
             if (ChoiceOptionLine.IsMatch(lastTrimmed))
             {
@@ -240,7 +252,11 @@ namespace NovelForge.Editor
                 }
 
                 if (choiceKeywordIndex >= 0)
-                    return new GraphNode(labelName, JoinLines(lines, start, choiceKeywordIndex), options, null, false, false, leadingComment);
+                {
+                    string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
+                    string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, choiceKeywordIndex), extra);
+                    return new GraphNode(labelName, body, options, null, false, false, leadingComment);
+                }
             }
 
             // No trailing control-flow element: a fall-through block (or malformed input we
@@ -258,6 +274,13 @@ namespace NovelForge.Editor
             while (trimmedEnd > start && lines[trimmedEnd - 1].Trim().Length == 0)
                 trimmedEnd--;
             return JoinLines(lines, start, trimmedEnd);
+        }
+
+        private static string CombineBodyWithTrailingExtra(string mainBody, string trailingExtra)
+        {
+            if (string.IsNullOrEmpty(trailingExtra))
+                return mainBody;
+            return string.IsNullOrEmpty(mainBody) ? trailingExtra : mainBody + "\n" + trailingExtra;
         }
 
         private static string JoinLines(string[] lines, int start, int end)
