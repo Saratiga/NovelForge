@@ -5,9 +5,16 @@
   "description": "Personal Unity toolkit for building visual novels: DSL-scripted dialogue, branching, save/load, localization, and a read/write branch-graph editor.",
   "unity": "6000.6",
   "dependencies": {
-    "com.unity.textmeshpro": "3.0.9",
+    "com.unity.ugui": "2.6.0",
     "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
+  "samples": [
+    {
+      "displayName": "Getting Started",
+      "description": "End-to-end demo: dialogue, branching, choices, save/load, localization, audio and backgrounds.",
+      "path": "Samples~/GettingStarted"
+    }
+  ],
   "author": {
     "name": "vova1"
   }

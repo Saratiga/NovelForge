@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d6527e996aa886499613f5271157fca, type: 3}
-  m_Name: AliceDefinition
+  m_Name: BobDefinition
   m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.CharacterDefinition
-  id: alice
-  displayName: Alice
-  nameColor: {r: 1, g: 0.3, b: 0.6, a: 1}
+  id: bob
+  displayName: Bob
+  nameColor: {r: 0.3, g: 0.5, b: 1, a: 1}
   poses:
-  - emotion: happy
-    sprite: {fileID: -2354258780151900919, guid: fcafea267a138a14fb36b4e99df933ac, type: 3}
   - emotion: neutral
-    sprite: {fileID: 3507605886749784483, guid: 737498acbcceeea448ddfcbeef233f77, type: 3}
+    sprite: {fileID: 21300000, guid: ab1b1653955362f48bf0e4c6ba904ef5, type: 3}
+  - emotion: laughing
+    sprite: {fileID: 21300000, guid: a082d1c09a770f54ba1b864d0955a8e3, type: 3}

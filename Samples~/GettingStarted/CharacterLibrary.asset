@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: CharacterLibrary
   m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.CharacterLibrary
   characters:
-  - {fileID: 11400000, guid: d53eac15d4e399b459587444a26221a2, type: 2}
-  - {fileID: 11400000, guid: 39c62551405145a489a0d94bebe72003, type: 2}
+  - {fileID: 11400000, guid: ebe5b611f8b331947928f56b349f7211, type: 2}
+  - {fileID: 11400000, guid: d794c245ff396294bb46ec3b2d6da268, type: 2}

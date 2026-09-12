@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.BackgroundLibrary
   backgrounds:
   - id: classroom
-    sprite: {fileID: 7512705749639379647, guid: 96ec0bbcaa57e5b46abb52125a9d083a, type: 3}
+    sprite: {fileID: 21300000, guid: 144dfacc6ab7d4746810a2cd805892d2, type: 3}
   cgs:
   - id: sunset
-    sprite: {fileID: -5916820956707309062, guid: a500bfe278bd1c34c817ed406ed85205, type: 3}
+    sprite: {fileID: 21300000, guid: a92b1dd66b7186e4cb2d6fec767ab9e5, type: 3}

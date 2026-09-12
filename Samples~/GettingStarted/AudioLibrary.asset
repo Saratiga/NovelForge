@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.AudioLibrary
   musicTracks:
   - id: theme
-    clip: {fileID: 8300000, guid: 5000547fb431b41439857cbffbaa1d9b, type: 3}
+    clip: {fileID: 8300000, guid: df7ebf70392fcc248aa50e497cd8bf6d, type: 3}
   sfxClips:
   - id: door_open
-    clip: {fileID: 8300000, guid: e8530a7a6fb14d641bb7487b16ad7545, type: 3}
+    clip: {fileID: 8300000, guid: 82cc8e66ca34ac94b83a73e71c75ad38, type: 3}
