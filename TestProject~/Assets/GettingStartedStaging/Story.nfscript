@@ -1,0 +1,39 @@
+label start
+bg classroom
+music theme
+alice: Hi! I'm Alice. #happy @greet1 left
+bob: And I'm Bob. #neutral @greet2 right
+set trust = 0
+alice: Would you like to hear a joke?
+choice
+"Sure!" @yes -> joke
+"No thanks" @no -> skip_joke
+
+label joke
+gosub tell_joke
+set trust += 1
+jump after_joke
+
+label skip_joke
+bob: Suit yourself. #neutral right
+
+label after_joke
+if trust >= 1
+    alice: Thanks for listening! #happy left
+else
+    alice: Okay then. #neutral left
+endif
+cg sunset
+wait 0.5
+alice: Let's see what's outside.
+sfx door_open
+jump ending
+
+label tell_joke
+bob: Why did the developer quit? #laughing right
+bob: Because they didn't get arrays! #laughing right
+return
+
+label ending
+alice: That's the end of this demo. #happy left
+return

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d6527e996aa886499613f5271157fca, type: 3}
+  m_Name: AliceDefinition
+  m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.CharacterDefinition
+  id: alice
+  displayName: Alice
+  nameColor: {r: 1, g: 0.3, b: 0.6, a: 1}
+  poses:
+  - emotion: happy
+    sprite: {fileID: -2354258780151900919, guid: fcafea267a138a14fb36b4e99df933ac, type: 3}
+  - emotion: neutral
+    sprite: {fileID: 3507605886749784483, guid: 737498acbcceeea448ddfcbeef233f77, type: 3}

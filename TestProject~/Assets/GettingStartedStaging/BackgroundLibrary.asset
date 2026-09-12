@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a392b6de08cf1048a939b95e620cfa4, type: 3}
+  m_Name: BackgroundLibrary
+  m_EditorClassIdentifier: NovelForge.Runtime::NovelForge.Runtime.BackgroundLibrary
+  backgrounds:
+  - id: classroom
+    sprite: {fileID: 7512705749639379647, guid: 96ec0bbcaa57e5b46abb52125a9d083a, type: 3}
+  cgs:
+  - id: sunset
+    sprite: {fileID: -5916820956707309062, guid: a500bfe278bd1c34c817ed406ed85205, type: 3}
