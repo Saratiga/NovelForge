@@ -1,105 +1,108 @@
-# NovelForge — Usage Guide
+# NovelForge — руководство по использованию
 
-## Project structure
+## Структура проекта
 
-- `*.nfscript` files — DSL scripts, anywhere under `Assets/`. Imported automatically into
-  a `NovelScriptAsset` by `NovelScriptImporter`.
-- `CharacterDefinition` assets (`NovelForge/Character Definition`) — one per character:
-  id, display name, name color, and a sprite per emotion. Collected into a
-  `CharacterLibrary` asset (`NovelForge/Character Library`) that a scene's
-  `DialoguePresenter` references.
-- `BackgroundLibrary` (`NovelForge/Background Library`) — id→sprite maps for `bg` and `cg`
-  commands.
-- `AudioLibrary` (`NovelForge/Audio Library`) — id→clip maps for `music` and `sfx`
-  commands.
-- Localization files — plain JSON, `{ "line-id": "translated text", ... }`. Loaded via
-  `LocalizationTable.FromJson(textAsset.text)`.
-- Save data — `JsonSaveStorage` (implements `ISaveStorage`) writes one JSON file per slot
-  under `Application.persistentDataPath` by default; swap in a different `ISaveStorage`
-  implementation for a different backend.
+- Файлы `*.nfscript` — DSL-скрипты, могут лежать где угодно под `Assets/`.
+  Автоматически импортируются в `NovelScriptAsset` через `NovelScriptImporter`.
+- Ассеты `CharacterDefinition` (`NovelForge/Character Definition`) — один на персонажа:
+  id, отображаемое имя, цвет имени и спрайт на каждую эмоцию. Собираются в ассет
+  `CharacterLibrary` (`NovelForge/Character Library`), на который ссылается
+  `DialoguePresenter` сцены.
+- `BackgroundLibrary` (`NovelForge/Background Library`) — карта id→спрайт для команд
+  `bg` и `cg`.
+- `AudioLibrary` (`NovelForge/Audio Library`) — карта id→клип для команд `music` и `sfx`.
+- Файлы локализации — обычный JSON, `{ "line-id": "переведённый текст", ... }`.
+  Загружаются через `LocalizationTable.FromJson(textAsset.text)`.
+- Данные сохранений — `JsonSaveStorage` (реализует `ISaveStorage`) по умолчанию пишет
+  один JSON-файл на слот в `Application.persistentDataPath`; для другого бэкенда
+  подставьте свою реализацию `ISaveStorage`.
 
-## DSL syntax
+## Синтаксис DSL
 
-| Construct | Syntax | Notes |
+| Конструкция | Синтаксис | Примечания |
 |---|---|---|
-| Label | `label <name>` | Jump/gosub target. Resets auto-generated localization ids. |
-| Comment | `// text` | Attaches to the next command; round-trips through the Branch Graph editor. |
-| Dialogue | `<CharacterId>: <text> [#emotion] [@id] [left\|right\|center]` | `#emotion` selects a sprite pose; `@id` is an explicit localization id (auto-generated as `<label>_<ordinal>` if omitted); position is a bare trailing `left`/`right`/`center` word. |
-| Assignment | `set <var> = <value>` / `+=` / `-=` | Value: `true`/`false`, an int, a float, or a `"quoted string"`. |
-| Condition | `if <var> <op> <value>` ... `else` ... `endif` | `op`: `== != > >= < <=`. `else`/`endif` optional/required as in any C-like language. |
-| Choice | `choice` then one or more `"text" [@id] -> label` lines immediately after | Player picks one; jumps to the option's label. |
-| Jump | `jump <label>` | Unconditional jump. |
-| Subroutine call | `gosub <label>` | Jumps, pushing a return address. |
-| Return | `return` | Pops the call stack (from the nearest `gosub`) or ends the script if the stack is empty. |
-| Background | `bg <id>` | Crossfades to the background registered under `<id>`. |
-| CG | `cg <id>` | Fades in a full-screen illustration. |
-| Music | `music <id>` | Crossfades to the track registered under `<id>`. |
-| Sound effect | `sfx <id>` | Plays a one-shot clip from a pooled voice. |
-| Wait | `wait <seconds>` | Pauses the script for the given duration. |
+| Метка | `label <name>` | Цель для `jump`/`gosub`. Сбрасывает автогенерацию id локализации. |
+| Комментарий | `// текст` | Привязывается к следующей команде; сохраняется при round-trip через редактор графа веток. |
+| Реплика | `<CharacterId>: <текст> [#emotion] [@id] [left\|right\|center]` | `#emotion` выбирает спрайт-позу; `@id` — явный id локализации (если не указан, генерируется как `<label>_<ordinal>`); позиция — отдельное слово `left`/`right`/`center` в конце строки. |
+| Присваивание | `set <var> = <value>` / `+=` / `-=` | Значение: `true`/`false`, целое число, дробное число или строка в `"кавычках"`. |
+| Условие | `if <var> <op> <value>` ... `else` ... `endif` | `op`: `== != > >= < <=`. `else`/`endif` — опционально/обязательно, как в любом C-подобном языке. |
+| Выбор | `choice`, а сразу за ним одна или более строк `"текст" [@id] -> label` | Игрок выбирает один вариант; переход на метку выбранного варианта. |
+| Переход | `jump <label>` | Безусловный переход. |
+| Вызов подпрограммы | `gosub <label>` | Переход с сохранением адреса возврата. |
+| Возврат | `return` | Снимает адрес со стека вызовов (ближайший `gosub`) или завершает скрипт, если стек пуст. |
+| Фон | `bg <id>` | Кроссфейд на фон, зарегистрированный под `<id>`. |
+| CG | `cg <id>` | Плавное появление полноэкранной иллюстрации. |
+| Музыка | `music <id>` | Кроссфейд на трек, зарегистрированный под `<id>`. |
+| Звуковой эффект | `sfx <id>` | Проигрывает одиночный клип из пула голосов. |
+| Пауза | `wait <seconds>` | Приостанавливает скрипт на заданное число секунд. |
 
-## Editor tools
+## Инструменты редактора
 
-- **Script Editor** (double-click a `.nfscript` asset in the Project window) — syntax
-  highlighting and autocomplete for the DSL above.
-- **Character Editor** (`Window → NovelForge → Character Editor`) — browse/edit
-  `CharacterDefinition` assets, preview emotion sprites, and validate character ids used
-  in scripts against what's actually defined (and vice versa).
-- **Branch Graph** (`Window → NovelForge → Branch Graph`, or right-click a `.nfscript`
-  asset → **Open in Branch Graph**) — a read/write node graph over a script's `label`
-  blocks; edits round-trip back to the original text, preserving comments.
-- **`NovelScriptImporter`** — a `ScriptedImporter` that compiles every `.nfscript` on
-  import and reports DSL syntax errors as Unity import errors at the exact line.
+- **Script Editor** (двойной клик по ассету `.nfscript` в окне Project) — подсветка
+  синтаксиса и автодополнение для DSL выше.
+- **Character Editor** (`Window → NovelForge → Character Editor`) — просмотр и
+  редактирование ассетов `CharacterDefinition`, предпросмотр спрайтов эмоций, сверка id
+  персонажей, используемых в скриптах, с тем, что реально определено (и наоборот).
+- **Branch Graph** (`Window → NovelForge → Branch Graph`, либо правый клик на ассете
+  `.nfscript` → **Open in Branch Graph**) — граф-узлы с чтением и записью поверх блоков
+  `label` скрипта; правки сохраняются обратно в исходный текст с сохранением
+  комментариев.
+- **`NovelScriptImporter`** — `ScriptedImporter`, который компилирует каждый `.nfscript`
+  при импорте и показывает синтаксические ошибки DSL как ошибки импорта Unity на точной
+  строке.
 
-## Building a scene from scratch
+## Сборка сцены с нуля
 
-1. Write a `.nfscript` file with at least one `label` and a `return`.
-2. Create a `CharacterDefinition` per speaking character, a `CharacterLibrary` referencing
-   them, and (if the script uses `bg`/`cg`/`music`/`sfx`) a `BackgroundLibrary`/
-   `AudioLibrary`.
-3. In a scene, add the presenters your script needs: `DialoguePresenter` (+ a
-   `DialogueBoxView` with name/body `TMP_Text` and an advance `Button`, + an `ActorView`
-   per on-screen character position, using `SpriteRenderer`s), `ChoiceView` (+ option
-   `Button`s with a `TMP_Text` child each), `BackgroundPresenter` (+ two crossfade
-   `SpriteRenderer` slots and a CG slot), `AudioPresenter` (+ two music `AudioSource`s for
-   crossfading).
-4. Add a `NovelRunner` component; assign the script asset and every presenter above to its
-   fields.
-5. Call `runner.Play()` from your own code (a button click, a `Start()`, wherever fits your
-   game's flow) to compile and run the script.
+1. Напишите файл `.nfscript` минимум с одной `label` и `return`.
+2. Создайте `CharacterDefinition` на каждого говорящего персонажа, `CharacterLibrary`,
+   ссылающуюся на них, и (если скрипт использует `bg`/`cg`/`music`/`sfx`)
+   `BackgroundLibrary`/`AudioLibrary`.
+3. В сцене добавьте презентеры, нужные вашему скрипту: `DialoguePresenter` (+
+   `DialogueBoxView` с `TMP_Text` для имени/текста и кнопкой продолжения, + `ActorView`
+   на каждую позицию персонажа на экране, использующий `SpriteRenderer`), `ChoiceView`
+   (+ кнопки-варианты с дочерним `TMP_Text` у каждой), `BackgroundPresenter` (+ два слота
+   `SpriteRenderer` для кроссфейда и слот под CG), `AudioPresenter` (+ два
+   `AudioSource` для музыки, для кроссфейда).
+4. Добавьте компонент `NovelRunner`; назначьте ему ассет скрипта и все презентеры выше.
+5. Вызовите `runner.Play()` из своего кода (по клику кнопки, в `Start()` — где подходит
+   по логике вашей игры), чтобы скомпилировать и запустить скрипт.
 
-`Samples~/GettingStarted` is a complete, working reference for all of the above — including
-a title screen and save/load — see `DemoFlow.cs` for how a real game wires `NovelRunner`
-together with save/load and screen navigation (`NovelRunner` itself stays minimal and
-doesn't know about either).
+`Samples~/GettingStarted` — полный рабочий референс всего вышеперечисленного, включая
+титульный экран и сохранение/загрузку — смотрите `DemoFlow.cs`, как реальная игра
+связывает `NovelRunner` с сохранением/загрузкой и переключением экранов (сам
+`NovelRunner` остаётся минимальным и ничего не знает ни о том, ни о другом).
 
-## Save/Load
+## Сохранение/загрузка
 
-- `ISaveStorage` — the storage abstraction (`Save`/`Load`/`SlotExists`).
-  `JsonSaveStorage` is the built-in implementation.
-- `SaveLoadController` — orchestrates a save/load against a `PlaybackController` +
-  `StoryContext` + `ISaveStorage`. Construct one after `NovelRunner.Prepare()` (its
-  `.Playback`/`.Context` are only populated after `Prepare()` succeeds).
-- `SaveLoadView` — a UGUI component presenting a fixed grid of named slots in either Save
-  or Load mode (`ShowSaveMode()`/`ShowLoadMode()`), showing Occupied/Empty per slot.
+- `ISaveStorage` — абстракция хранилища (`Save`/`Load`/`SlotExists`). `JsonSaveStorage` —
+  встроенная реализация.
+- `SaveLoadController` — организует сохранение/загрузку поверх `PlaybackController` +
+  `StoryContext` + `ISaveStorage`. Создавайте его после `NovelRunner.Prepare()` (его
+  `.Playback`/`.Context` заполняются только после успешного `Prepare()`).
+- `SaveLoadView` — UGUI-компонент, показывающий фиксированную сетку именованных слотов
+  в режиме Save или Load (`ShowSaveMode()`/`ShowLoadMode()`), отображая Occupied/Empty
+  для каждого слота.
 
-**Important ordering for "Continue" flows:** call `NovelRunner.Prepare()` (which builds a
-fresh `Playback` but does not start it), then `SaveLoadController.LoadInto()` (which
-restores the snapshot onto that not-yet-running `Playback`), and only then
-`NovelRunner.Begin()`. Unity runs a coroutine synchronously up to its first real suspend
-point, so calling `Begin()`/`Play()` before restoring the snapshot can let a few commands
-execute from the start of the script before the restore takes effect.
+**Важный порядок для сценария «продолжить игру»:** сначала вызовите
+`NovelRunner.Prepare()` (строит свежий `Playback`, но не запускает его), затем
+`SaveLoadController.LoadInto()` (восстанавливает снимок в ещё не запущенный `Playback`),
+и только потом `NovelRunner.Begin()`. Корутины Unity выполняются синхронно до первой
+реальной точки приостановки, поэтому вызов `Begin()`/`Play()` до восстановления снимка
+может позволить нескольким командам выполниться с начала скрипта до того, как восстановление
+вступит в силу.
 
-## Localization
+## Локализация
 
-- Format: flat JSON, `{ "line-id": "translated text" }`.
-- Every dialogue line and every choice option has a line id — either explicit (`@id` in
-  the script) or auto-generated as `<nearest label>_<ordinal>`. Ids must be unique across
-  the whole script.
-- Assign a `TextAsset` (the JSON file) to `NovelRunner`'s `localizationJson` field; it's
-  parsed via `LocalizationTable.FromJson`. Leave it unassigned to skip localization
-  entirely (dialogue/choice text is shown as written in the script, no warnings).
-- A line id present in the script but missing from the translation table falls back to
-  the source text with a `Debug.LogWarning` — useful for spotting incomplete translations.
-  `Samples~/GettingStarted/Localization/ru.json` demonstrates this: it translates 4 of the
-  script's ~13 line ids on purpose. Assign it to the demo's `NovelRunner` to see both the
-  translated lines and the fallback warnings for the rest.
+- Формат: плоский JSON, `{ "line-id": "переведённый текст" }`.
+- У каждой реплики и каждого варианта выбора есть id строки — либо явный (`@id` в
+  скрипте), либо автогенерируемый как `<ближайшая label>_<ordinal>`. Id должны быть
+  уникальны в пределах всего скрипта.
+- Назначьте `TextAsset` (JSON-файл) полю `localizationJson` компонента `NovelRunner`; он
+  разбирается через `LocalizationTable.FromJson`. Оставьте поле пустым, чтобы полностью
+  пропустить локализацию (текст реплик/вариантов показывается как написано в скрипте, без
+  предупреждений).
+- Если id строки есть в скрипте, но отсутствует в таблице перевода, используется
+  исходный текст и выводится `Debug.LogWarning` — удобно для поиска неполных переводов.
+  `Samples~/GettingStarted/Localization/ru.json` демонстрирует это: намеренно переводит
+  4 из ~13 id строк скрипта. Назначьте его `NovelRunner` демки, чтобы увидеть и
+  переведённые реплики, и предупреждения о недостающем переводе для остальных.

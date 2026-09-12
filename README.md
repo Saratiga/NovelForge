@@ -1,44 +1,45 @@
 # NovelForge
 
-Personal Unity toolkit for building visual novels: DSL-scripted dialogue, branching,
-save/load, localization, and a read/write branch-graph editor. Distributed as a local/git
-UPM package — built for reuse across my own projects, not for a general audience.
+Личный Unity-инструментарий для создания визуальных новелл: диалоги на DSL-скриптах,
+ветвление, сохранение/загрузка, локализация и редактор графа веток с чтением и записью.
+Распространяется как локальный/git UPM-пакет — сделан для переиспользования в собственных
+проектах, а не для широкой аудитории.
 
-## Install
+## Установка
 
-Add to your project's `Packages/manifest.json`:
+Добавьте в `Packages/manifest.json` вашего проекта:
 
 ```json
 "com.novelforge.core": "file:../../NovelForge"
 ```
 
-(or a git URL, if pushed to a remote — adjust the path/URL to wherever this package lives
-relative to your project).
+(или git-URL, если запушено на удалённый репозиторий — путь/URL нужно подставить свой,
+в зависимости от того, где этот пакет лежит относительно вашего проекта).
 
-## Quick start
+## Быстрый старт
 
-Window → Package Manager → NovelForge → Samples → **Getting Started** → Import. Open the
-imported `GettingStarted.unity` scene and press Play. It's a ~2 minute playthrough that
-exercises dialogue, character sprites/emotions, branching (`if`/`else`), a player choice,
-reusable dialogue via `gosub`/`return`, backgrounds, a CG illustration, music/SFX, and
-save/load.
+Window → Package Manager → NovelForge → Samples → **Getting Started** → Import.
+Откройте импортированную сцену `GettingStarted.unity` и нажмите Play. Это прохождение
+на ~2 минуты, которое демонстрирует диалоги, спрайты персонажей с эмоциями, ветвление
+(`if`/`else`), выбор игрока, переиспользуемые реплики через `gosub`/`return`, фоны,
+CG-иллюстрацию, музыку/звуки и сохранение/загрузку.
 
-## Features
+## Возможности
 
-- DSL-scripted dialogue, branching (`if`/`else`), reusable snippets (`gosub`/`return`),
-  player choices
-- Save/load with variables and flags
-- Character sprites with emotions and screen positions
-- Localization (text; JSON translation tables keyed by stable line ids)
-- Music, SFX and voice audio
-- Backgrounds and full-screen CG illustrations
-- In-editor DSL script editor with syntax highlighting and autocomplete
-- In-editor read/write branch-graph visualization
-- `Character Editor` window for managing character definitions and their sprite/emotion
-  mappings against actual script usage
+- Диалоги на DSL-скриптах, ветвление (`if`/`else`), переиспользуемые фрагменты
+  (`gosub`/`return`), выбор игрока
+- Сохранение/загрузка с переменными и флагами
+- Спрайты персонажей с эмоциями и позициями на экране
+- Локализация (текст; JSON-таблицы переводов с ключами по стабильным id строк)
+- Музыка, звуковые эффекты и озвучка
+- Фоны и полноэкранные CG-иллюстрации
+- Встроенный редактор DSL-скриптов с подсветкой синтаксиса и автодополнением
+- Встроенная визуализация графа веток с чтением и записью
+- Окно `Character Editor` для управления определениями персонажей и сверки их
+  спрайтов/эмоций с реальным использованием в скриптах
 
-See [USAGE.md](USAGE.md) for the DSL reference, project structure, and a step-by-step
-guide to building a scene from scratch.
+Справочник по DSL, структура проекта и пошаговое руководство по сборке сцены с нуля —
+в [USAGE.md](USAGE.md).
 
-For the architectural reasoning behind any of this, see the design specs under
+Архитектурные обоснования — в дизайн-спеках в
 [`docs/superpowers/specs/`](docs/superpowers/specs/).
