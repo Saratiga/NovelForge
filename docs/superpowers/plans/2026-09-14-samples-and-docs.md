@@ -896,7 +896,16 @@ public static class DemoSceneBuilder
 
     private static Canvas CreateCanvas(string name)
     {
-        var go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        // NOTE: GraphicRaycaster must be added via the generic AddComponent<T>() call, not
+        // via the GameObject(string, params Type[]) constructor — that path was observed to
+        // embed a malformed m_Script reference (a builtin-extra-style {fileID: N} with no
+        // guid, pointing at the wrong builtin class) specifically for GraphicRaycaster in
+        // this Unity/package version combo, which crashes the native deserializer with an
+        // out-of-bounds read the next time the scene is loaded. CanvasScaler happens to
+        // resolve correctly through either path; GraphicRaycaster does not, so it's isolated
+        // here as its own explicit call.
+        var go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler));
+        go.AddComponent<GraphicRaycaster>();
         var canvas = go.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         return canvas;
