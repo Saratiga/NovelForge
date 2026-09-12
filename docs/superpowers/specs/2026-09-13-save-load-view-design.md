@@ -85,16 +85,4 @@ public class SaveLoadView : MonoBehaviour
 
 - **`JsonSaveStorage.SlotExists`** — EditMode-тест на том же temp-directory паттерне, что уже использует `JsonSaveStorageTests` (существующий файл, не создаётся заново).
 - **`SaveLoadController`** — чистая логика без UI-зависимости, полностью юнит-тестируема: `SaveTo` → `LoadInto` round-trip через реальный `JsonSaveStorage` на temp-папке (тот же принцип, что `SaveLoadRoundTripTests`); кейсы `NotFound` (пустой слот) и `Incompatible` (руками записанный файл с чужим `SchemaVersion`) — оба не должны трогать переданные `playback`/`context`.
-- **`SaveLoadView`** — `MonoBehaviour`/UGUI, как `ChoiceView`/`DialogueBoxView` — без автотестов, тот же установленный в проекте принцип.
-
-## План живой проверки (Play Mode, впервые для рантайм UI-компонента в этом проекте)
-
-Все предыдущие живые QA-проходы в этом проекте проверяли редакторские инструменты (Editor-режим). Это первая фаза, где живой QA распространяется на рантайм UI — тот же принцип "не доверять код-ревью визуальных/интерактивных вещей", применённый к Play Mode вместо Editor-режима:
-
-1. Собрать минимальную тестовую сцену в `TestProject~` — `Canvas` с несколькими слотами (`Button`+`TMP_Text` на каждый), `statusText`, компонент `SaveLoadView`, и bootstrap-скрипт, вручную создающий `PlaybackController`/`StoryContext`/`JsonSaveStorage`/`SaveLoadController` и вызывающий `SaveLoadView.Initialize(...)`.
-2. Войти в Play Mode. Вызвать `ShowLoadMode()` на пустом хранилище — все слоты показывают "Empty", кнопки неактивны.
-3. Переключить в `ShowSaveMode()`, кликнуть по слоту — слот сохраняется, сетка обновляется на "Occupied" (переключить обратно в Load-режим и увидеть смену).
-4. В Load-режиме кликнуть по занятому слоту — загрузка происходит, `OnLoadSucceeded` срабатывает (проверить, например, логом в тестовом bootstrap-скрипте).
-5. Руками испортить `SchemaVersion` в JSON-файле занятого слота на диске, попытаться загрузить — `statusText` показывает сообщение о несовместимости, игра не падает.
-6. Проверить консоль на отсутствие непредвиденных ошибок на всех шагах.
-7. Удалить тестовую сцену/скрипты/файлы слотов после проверки — как и `.nfscript`-заглушки в предыдущих фазах, ничего не остаётся в проекте.
+- **`SaveLoadView`** — **исправление после первичного написания этой спеки**: `MonoBehaviour`/UGUI-компоненты в этом проекте УЖЕ имеют установленный, работающий паттерн автотестирования в EditMode — `Tests/UI/ChoiceViewTests.cs` программно создаёт `GameObject`+`Button`+`TMP_Text` (без сцены/Play Mode), крутит корутину через `.MoveNext()`, проверяет состояние кнопок/текста напрямую, с `[TearDown]`-очисткой через `Object.DestroyImmediate`. Утверждение "без автотестов, как ChoiceView" было ошибочным — у ChoiceView есть автотесты, и `SaveLoadView` получает такие же: программная сборка слотов (`GameObject`+`Button`+`TMP_Text` на каждый), вызов `Initialize`/`ShowSaveMode`/`ShowLoadMode`, проверка `label.text`/`button.interactable`/событий напрямую. Никакого Play Mode, никакой ручной проверки не требуется — те же гарантии, что и у остального `NovelForge.UI`.
