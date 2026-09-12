@@ -831,7 +831,7 @@ public static class DemoSceneBuilder
         Button option0 = CreateChoiceButton(choicePanel.transform, "Option0", new Vector2(0, 30));
         Button option1 = CreateChoiceButton(choicePanel.transform, "Option1", new Vector2(0, -30));
         var choiceView = dialoguePresenterGo.AddComponent<ChoiceView>();
-        SetField(choiceView, "optionButtons", new[] { option0, option1 });
+        SetObjectArray(choiceView, "optionButtons", option0, option1);
 
         Button saveButton = CreateCornerButton(gameplayCanvas.transform, "SaveButton", "Save");
 
@@ -1009,6 +1009,16 @@ public static class DemoSceneBuilder
     {
         var so = new SerializedObject(target);
         so.FindProperty(fieldName).objectReferenceValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void SetObjectArray(Object target, string fieldName, params Object[] values)
+    {
+        var so = new SerializedObject(target);
+        var prop = so.FindProperty(fieldName);
+        prop.arraySize = values.Length;
+        for (int i = 0; i < values.Length; i++)
+            prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 }
