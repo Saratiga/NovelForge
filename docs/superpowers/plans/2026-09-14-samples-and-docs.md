@@ -766,7 +766,9 @@ public static class DemoSceneBuilder
         camera.orthographicSize = 5f;
         camera.transform.position = new Vector3(0f, 0f, -10f);
         camera.gameObject.tag = "MainCamera";
-        new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
+        var eventSystemGo = new GameObject("EventSystem");
+        eventSystemGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
+        eventSystemGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
 
         // World-space visuals (backgrounds/CG/actors), sorted by SpriteRenderer.sortingOrder.
         var backgroundSlotA = CreateSpriteRenderer("BackgroundSlotA", 0);
@@ -803,7 +805,8 @@ public static class DemoSceneBuilder
 
         // GameplayUI canvas: dialogue box, choice buttons, Save corner button.
         Canvas gameplayCanvas = CreateCanvas("GameplayUI");
-        GameObject dialogueBoxGo = new GameObject("DialogueBox", typeof(RectTransform), typeof(Image));
+        GameObject dialogueBoxGo = new GameObject("DialogueBox", typeof(RectTransform));
+        dialogueBoxGo.AddComponent<Image>();
         dialogueBoxGo.transform.SetParent(gameplayCanvas.transform, false);
         AnchorBottomStretch(dialogueBoxGo.GetComponent<RectTransform>(), height: 180f);
         var nameText = CreateTmpText(dialogueBoxGo.transform, "NameText", new Vector2(20, -10), 24);
@@ -896,15 +899,16 @@ public static class DemoSceneBuilder
 
     private static Canvas CreateCanvas(string name)
     {
-        // NOTE: GraphicRaycaster must be added via the generic AddComponent<T>() call, not
-        // via the GameObject(string, params Type[]) constructor — that path was observed to
-        // embed a malformed m_Script reference (a builtin-extra-style {fileID: N} with no
-        // guid, pointing at the wrong builtin class) specifically for GraphicRaycaster in
-        // this Unity/package version combo, which crashes the native deserializer with an
-        // out-of-bounds read the next time the scene is loaded. CanvasScaler happens to
-        // resolve correctly through either path; GraphicRaycaster does not, so it's isolated
-        // here as its own explicit call.
-        var go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler));
+        // NOTE: every component here is added via the generic AddComponent<T>() call, never
+        // via the GameObject(string, params Type[]) constructor. That constructor was
+        // observed (verified live, twice, on freshly-loaded scenes) to embed a malformed
+        // m_Script reference (a builtin-extra-style {fileID: N} with no guid) for
+        // EventSystem/StandaloneInputModule/CanvasScaler specifically — never for types
+        // added via AddComponent<T>(). A malformed reference like this crashes Unity's
+        // native deserializer with an out-of-bounds read the next time the scene loads.
+        var go = new GameObject(name);
+        go.AddComponent<Canvas>();
+        go.AddComponent<CanvasScaler>();
         go.AddComponent<GraphicRaycaster>();
         var canvas = go.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -929,7 +933,8 @@ public static class DemoSceneBuilder
 
     private static Button CreateChoiceButton(Transform parent, string name, Vector2 anchoredPos)
     {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        var go = new GameObject(name, typeof(RectTransform));
+        go.AddComponent<Image>();
         go.transform.SetParent(parent, false);
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
