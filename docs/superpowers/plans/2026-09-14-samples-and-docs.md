@@ -1075,9 +1075,14 @@ without `-batchmode`). In the Project window, open
 9. Click the **Back** button while the save/load panel is open (from the title screen's
    Load Game, before selecting a slot) → panel closes, title screen remains, nothing
    changed.
-10. Check the Console: no unexpected `Debug.LogError` entries anywhere in the run (a
-    missing-wiring error anywhere in this checklist is a real bug — fix it before
-    continuing).
+10. Check the Console: no unexpected `Debug.LogError` entries anywhere in the run, with
+    one known exception — `ReturnCommand` (`Runtime/Commands/Builtin/ReturnCommand.cs`,
+    pre-existing from an earlier phase) logs `"NovelForge: 'return' with an empty call
+    stack — ending playback."` at Error severity every time a top-level script ends via
+    `return`, which `Story.nfscript`'s `label ending` block does on every playthrough —
+    expect exactly one such line per full run, not zero. Any *other* `Debug.LogError`
+    (missing-wiring messages from presenters, `NovelRunner`, etc.) is a real bug — fix it
+    before continuing.
 
 If any step fails, fix the root cause (most likely a `SerializedObject` field-name typo in
 `DemoSceneBuilder.cs` from Step 2, a `DemoFlow.cs` logic bug, or a `NovelRunner` bug from
