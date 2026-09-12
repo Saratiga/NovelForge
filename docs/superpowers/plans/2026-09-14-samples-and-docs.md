@@ -651,6 +651,7 @@ git commit -m "Generate demo script, localization file, and placeholder art/audi
 
 ```csharp
 // Samples~/GettingStarted/DemoFlow.cs — demo-only, not part of the package's public API
+using System.Linq;
 using NovelForge.Runtime;
 using NovelForge.UI;
 using UnityEngine;
@@ -658,7 +659,6 @@ using UnityEngine.UI;
 
 public class DemoFlow : MonoBehaviour
 {
-    private const string SlotId = "demo-slot";
     private const string ScriptId = "getting-started";
 
     [SerializeField] private NovelRunner runner;
@@ -671,6 +671,10 @@ public class DemoFlow : MonoBehaviour
     [SerializeField] private Button loadGameButton;
     [SerializeField] private Button saveButton;
     [SerializeField] private Button closeSaveLoadButton;
+    // Must match the slot ids DemoSceneBuilder assigns to saveLoadView.slots — used only to
+    // decide whether the title screen's "Load Game" button should be enabled; SaveLoadView
+    // itself is the source of truth for which of these slots (if any) is actually occupied.
+    [SerializeField] private string[] slotIds = { "slot-0", "slot-1" };
 
     private JsonSaveStorage _storage;
     private SaveLoadController _saveLoad;
@@ -697,7 +701,7 @@ public class DemoFlow : MonoBehaviour
         titleScreen.SetActive(true);
         gameplayUi.SetActive(false);
         saveLoadPanel.SetActive(false);
-        loadGameButton.interactable = _storage.SlotExists(SlotId);
+        loadGameButton.interactable = slotIds.Any(_storage.SlotExists);
     }
 
     private void OnNewGame()
