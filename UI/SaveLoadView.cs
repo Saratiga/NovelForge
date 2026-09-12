@@ -8,6 +8,7 @@ namespace NovelForge.UI
 {
     public class SaveLoadView : MonoBehaviour
     {
+        [Serializable]
         public struct SlotUI
         {
             public string slotId;
