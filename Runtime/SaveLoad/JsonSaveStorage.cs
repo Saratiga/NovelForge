@@ -55,6 +55,8 @@ namespace NovelForge.Runtime
             return new SaveLoadResult { Status = SaveLoadStatus.Success, Data = data };
         }
 
+        public bool SlotExists(string slotId) => File.Exists(PathFor(slotId));
+
         private string PathFor(string slotId) => Path.Combine(_directory, $"{slotId}.json");
     }
 }

@@ -114,5 +114,22 @@ namespace NovelForge.Runtime.Tests
             Assert.AreEqual(SaveLoadStatus.Incompatible, result.Status);
             Assert.AreEqual(-1, result.FoundSchemaVersion);
         }
+
+        [Test]
+        public void SlotExists_AfterSave_ReturnsTrue()
+        {
+            var storage = CreateStorage();
+            storage.Save("slot1", new SaveData { ScriptId = "chapter1" });
+
+            Assert.IsTrue(storage.SlotExists("slot1"));
+        }
+
+        [Test]
+        public void SlotExists_NeverSaved_ReturnsFalse()
+        {
+            var storage = CreateStorage();
+
+            Assert.IsFalse(storage.SlotExists("does-not-exist"));
+        }
     }
 }
