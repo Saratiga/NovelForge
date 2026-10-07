@@ -11,6 +11,7 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            context.Scene.Music = _trackId;
             if (context.Audio == null)
             {
                 Debug.LogError("NovelForge: no IAudioPresenter wired — skipping music.");

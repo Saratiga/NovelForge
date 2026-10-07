@@ -25,6 +25,8 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            if (!string.IsNullOrEmpty(_emotion))
+                context.Scene.Actors[_position ?? ""] = new ActorState { CharacterId = _characterId, Emotion = _emotion };
             if (context.Dialogue == null)
             {
                 Debug.LogError("NovelForge: no IDialoguePresenter wired — skipping dialogue line.");

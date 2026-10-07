@@ -11,6 +11,7 @@ namespace NovelForge.Runtime
 
         public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
         {
+            context.Scene.Cg = _cgId;
             if (context.Backgrounds == null)
             {
                 Debug.LogError("NovelForge: no IBackgroundPresenter wired — skipping CG.");
