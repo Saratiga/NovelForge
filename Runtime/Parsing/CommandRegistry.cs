@@ -9,6 +9,10 @@ namespace NovelForge.Runtime
 {
     public class CommandRegistry
     {
+        internal static int ScanCountForTesting;
+
+        private static readonly Lazy<IReadOnlyList<(string name, Type type)>> AttributedTypes = new(ScanAssemblies);
+
         private readonly Dictionary<string, Func<string, Command>> _factories = new();
 
         public void Register(string commandName, Func<string, Command> factory) => _factories[commandName] = factory;
@@ -36,7 +40,56 @@ namespace NovelForge.Runtime
             registry.Register("music", args => new PlayMusicCommand(args.Trim()));
             registry.Register("sfx", args => new PlaySfxCommand(args.Trim()));
             registry.Register("wait", args => new WaitCommand(float.Parse(args.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture)));
+            RegisterTypes(registry, FindAttributedTypes());
             return registry;
+        }
+
+        internal static IReadOnlyList<(string name, Type type)> FindAttributedTypes() => AttributedTypes.Value;
+
+        private static IReadOnlyList<(string name, Type type)> ScanAssemblies()
+        {
+            ScanCountForTesting++;
+            Assembly runtimeAssembly = typeof(Command).Assembly;
+            string runtimeName = runtimeAssembly.GetName().Name;
+            var found = new List<(string name, Type type)>();
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly != runtimeAssembly && !ReferencesAssembly(assembly, runtimeName))
+                    continue;
+
+                foreach (Type type in LoadableTypes(assembly))
+                {
+                    var attribute = type.GetCustomAttribute<NovelCommandAttribute>();
+                    if (attribute != null)
+                        found.Add((attribute.Name, type));
+                }
+            }
+
+            found.Sort((a, b) => string.CompareOrdinal(a.type.FullName, b.type.FullName));
+            return found;
+        }
+
+        private static bool ReferencesAssembly(Assembly assembly, string referencedName)
+        {
+            foreach (AssemblyName reference in assembly.GetReferencedAssemblies())
+            {
+                if (reference.Name == referencedName)
+                    return true;
+            }
+            return false;
+        }
+
+        private static IEnumerable<Type> LoadableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                return Array.FindAll(e.Types, t => t != null);
+            }
         }
 
         internal static void RegisterTypes(CommandRegistry registry, IEnumerable<(string name, Type type)> candidates)

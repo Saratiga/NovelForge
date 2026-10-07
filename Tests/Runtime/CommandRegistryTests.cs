@@ -9,7 +9,7 @@ namespace NovelForge.Runtime.Tests
         {
             var registry = CommandRegistry.CreateDefault();
 
-            CollectionAssert.AreEquivalent(new[] { "bg", "cg", "music", "sfx", "wait" }, registry.RegisteredNames);
+            CollectionAssert.IsSubsetOf(new[] { "bg", "cg", "music", "sfx", "wait" }, registry.RegisteredNames);
         }
 
         [Test]

@@ -120,5 +120,33 @@ namespace NovelForge.Runtime.Tests
             StringAssert.Contains("bad speed", exception.Message);
             Assert.AreEqual(2, exception.LineNumber);
         }
+
+        [Test]
+        public void CreateDefault_IncludesAttributedCommandFromLoadedAssembly()
+        {
+            Assert.IsTrue(CommandRegistry.CreateDefault().TryCreate("test_ping", "pong", out var command));
+            Assert.AreEqual("pong", ((TestPingCommand)command).Args);
+        }
+
+        [Test]
+        public void ScriptCompiler_Default_CompilesAttributedCommand()
+        {
+            var script = new ScriptCompiler().Compile("label a\ntest_ping hello\n");
+
+            Assert.IsInstanceOf<TestPingCommand>(script.Commands[0]);
+        }
+
+        [Test]
+        public void CreateDefault_RepeatedCalls_ScanAssembliesOnce()
+        {
+            CommandRegistry.CreateDefault();
+            int before = CommandRegistry.ScanCountForTesting;
+
+            for (int i = 0; i < 50; i++)
+                CommandRegistry.CreateDefault();
+
+            Assert.AreEqual(before, CommandRegistry.ScanCountForTesting);
+            Assert.LessOrEqual(before, 1);
+        }
     }
 }
