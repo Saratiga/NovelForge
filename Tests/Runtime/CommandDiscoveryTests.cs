@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
@@ -134,6 +135,82 @@ namespace NovelForge.Runtime.Tests
             var script = new ScriptCompiler().Compile("label a\ntest_ping hello\n");
 
             Assert.IsInstanceOf<TestPingCommand>(script.Commands[0]);
+        }
+
+        private class FakeAssembly : Assembly
+        {
+            private readonly Func<Type[]> _getTypes;
+
+            public FakeAssembly(Func<Type[]> getTypes) => _getTypes = getTypes;
+
+            public override string FullName => "FakeAssembly";
+
+            public override bool IsDynamic => false;
+
+            public override Type[] GetTypes() => _getTypes();
+
+            public override AssemblyName[] GetReferencedAssemblies() => new[] { new AssemblyName("NovelForge.Runtime") };
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("two words")]
+        [TestCase("9lives")]
+        public void RegisterTypes_InvalidName_LogsErrorAndSkips(string name)
+        {
+            var registry = new CommandRegistry();
+            LogAssert.Expect(LogType.Error, new Regex("not a valid command name"));
+
+            CommandRegistry.RegisterTypes(registry, new[] { (name, typeof(EchoCommand)) });
+
+            Assert.AreEqual(0, registry.RegisteredNames.Count);
+        }
+
+        [TestCase("label")]
+        [TestCase("choice")]
+        [TestCase("endif")]
+        public void RegisterTypes_ReservedKeyword_LogsErrorAndSkips(string name)
+        {
+            var registry = new CommandRegistry();
+            LogAssert.Expect(LogType.Error, new Regex($"'{name}'.*reserved DSL keyword"));
+
+            CommandRegistry.RegisterTypes(registry, new[] { (name, typeof(EchoCommand)) });
+
+            Assert.IsFalse(registry.IsRegistered(name));
+        }
+
+        [Test]
+        public void ScanAssemblies_AssemblyThatThrows_IsSkippedWithWarning()
+        {
+            var broken = new FakeAssembly(() => throw new InvalidOperationException("boom"));
+            LogAssert.Expect(LogType.Warning, new Regex("FakeAssembly.*boom"));
+
+            var found = CommandRegistry.ScanAssemblies(new[] { broken, typeof(TestPingCommand).Assembly });
+
+            CollectionAssert.Contains(found, ("test_ping", typeof(TestPingCommand)));
+        }
+
+        [Test]
+        public void ScanAssemblies_PartialTypeLoad_UsesTypesThatLoaded()
+        {
+            var partial = new FakeAssembly(() => throw new ReflectionTypeLoadException(
+                new[] { typeof(TestPingCommand), null }, new Exception[] { null, new TypeLoadException() }));
+
+            var found = CommandRegistry.ScanAssemblies(new Assembly[] { partial });
+
+            CollectionAssert.AreEqual(new[] { ("test_ping", typeof(TestPingCommand)) }, found);
+        }
+
+        [Test]
+        public void CreateDefault_RepeatedCalls_ValidateOnce()
+        {
+            CommandRegistry.CreateDefault();
+            int before = CommandRegistry.ValidationCountForTesting;
+
+            for (int i = 0; i < 50; i++)
+                CommandRegistry.CreateDefault();
+
+            Assert.AreEqual(before, CommandRegistry.ValidationCountForTesting);
         }
 
         [Test]
