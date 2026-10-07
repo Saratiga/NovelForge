@@ -78,6 +78,47 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void Replay_CallsPresentersInOrder_BgThenCgThenMusicThenActors()
+        {
+            var recorder = new OrderRecordingPresenter();
+            var context = new StoryContext { Backgrounds = recorder, Audio = recorder, Dialogue = recorder };
+            context.Scene.Background = "room";
+            context.Scene.Cg = "sunset";
+            context.Scene.Music = "theme";
+            context.Scene.Actors["left"] = new ActorState { CharacterId = "Alice", Emotion = "happy" };
+            context.Scene.Actors[""] = new ActorState { CharacterId = "Bob", Emotion = "sad" };
+
+            CoroutineTestUtil.RunToCompletion(context.Scene.Replay(context));
+
+            CollectionAssert.AreEqual(
+                new[] { "bg:room", "cg:sunset", "music:theme", "actor:Bob:sad:null", "actor:Alice:happy:left" },
+                recorder.Log);
+        }
+
+        [Test]
+        public void Replay_EmptyScene_CallsNothing()
+        {
+            var recorder = new OrderRecordingPresenter();
+            var context = new StoryContext { Backgrounds = recorder, Audio = recorder, Dialogue = recorder };
+
+            CoroutineTestUtil.RunToCompletion(context.Scene.Replay(context));
+
+            CollectionAssert.IsEmpty(recorder.Log);
+        }
+
+        [Test]
+        public void Replay_NullPresenters_SkipsWithoutError()
+        {
+            var context = new StoryContext();
+            context.Scene.Background = "room";
+            context.Scene.Cg = "sunset";
+            context.Scene.Music = "theme";
+            context.Scene.Actors["left"] = new ActorState { CharacterId = "Alice", Emotion = "happy" };
+
+            Assert.DoesNotThrow(() => CoroutineTestUtil.RunToCompletion(context.Scene.Replay(context)));
+        }
+
+        [Test]
         public void CopyFrom_Null_ClearsAll()
         {
             var scene = new SceneState { Background = "room", Cg = "sunset", Music = "theme" };

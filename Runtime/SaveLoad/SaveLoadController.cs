@@ -28,7 +28,9 @@ namespace NovelForge.Runtime
                 Position = script.ToPosition(snapshot.PointerIndex),
                 CallStack = Array.ConvertAll(snapshot.CallStack, script.ToPosition),
                 Variables = new Dictionary<string, object>(_context.Variables.Export()),
+                Scene = new SceneState(),
             };
+            data.Scene.CopyFrom(_context.Scene);
             _storage.Save(slotId, data);
         }
 
@@ -56,6 +58,7 @@ namespace NovelForge.Runtime
                 return new SaveLoadResult { Status = SaveLoadStatus.Incompatible, FoundSchemaVersion = data.SchemaVersion };
 
             _context.Variables.Import(data.Variables);
+            _context.Scene.CopyFrom(data.Scene);
             _playback.RestoreSnapshot(new PlaybackSnapshot { PointerIndex = pointerIndex, CallStack = callStack });
             return result;
         }

@@ -99,6 +99,33 @@ namespace NovelForge.UI.Tests
         }
 
         [Test]
+        public void ShowActor_AllResolve_ShowsSpriteWithoutTouchingDialogueBox()
+        {
+            var dialogueBox = CreateDialogueBox();
+            var actorView = CreateActorView();
+            var presenter = CreatePresenter(CreateLibrary(), dialogueBox, actorView);
+
+            CoroutineTestUtil.RunToCompletion(presenter.ShowActor("alice", "happy", "left"));
+
+            Assert.IsNotNull(actorView.spriteRenderer.sprite);
+            Assert.AreEqual(1f, actorView.spriteRenderer.color.a, 0.001f);
+            Assert.IsTrue(string.IsNullOrEmpty(dialogueBox.nameText.text));
+            Assert.IsTrue(string.IsNullOrEmpty(dialogueBox.bodyText.text));
+        }
+
+        [Test]
+        public void ShowActor_UnknownCharacter_LogsErrorAndShowsNothing()
+        {
+            var actorView = CreateActorView();
+            var presenter = CreatePresenter(CreateLibrary(), CreateDialogueBox(), actorView);
+
+            LogAssert.Expect(LogType.Error, "NovelForge: no character registered for id 'bob' — skipping actor.");
+            CoroutineTestUtil.RunToCompletion(presenter.ShowActor("bob", "happy", "left"));
+
+            Assert.IsNull(actorView.spriteRenderer.sprite);
+        }
+
+        [Test]
         public void ShowLine_UnknownCharacterId_LogsErrorAndUsesIdAsFallbackName()
         {
             var library = CreateLibrary();

@@ -43,27 +43,50 @@ namespace NovelForge.UI
                 nameColor = character.NameColor;
 
                 if (!string.IsNullOrEmpty(emotion))
-                {
-                    if (!character.TryGetSprite(emotion, out var sprite))
-                    {
-                        Debug.LogError($"NovelForge: character '{characterId}' has no sprite for emotion '{emotion}' — leaving actor unchanged.");
-                    }
-                    else if (!TryFindSlot(position, out var slotView))
-                    {
-                        Debug.LogError($"NovelForge: no position slot registered for '{position}' — skipping actor display.");
-                    }
-                    else if (slotView == null)
-                    {
-                        Debug.LogError($"NovelForge: position slot '{position}' has no ActorView assigned — skipping actor display.");
-                    }
-                    else
-                    {
-                        yield return slotView.ShowSprite(sprite);
-                    }
-                }
+                    yield return ShowActorSprite(character, characterId, emotion, position);
             }
 
             yield return dialogueBox.ShowText(displayName, nameColor, text);
+        }
+
+        public IEnumerator ShowActor(string characterId, string emotion, string position)
+        {
+            if (string.IsNullOrEmpty(emotion))
+                yield break;
+
+            if (library == null)
+            {
+                Debug.LogError("NovelForge: DialoguePresenter is missing library — skipping actor.");
+                yield break;
+            }
+
+            if (!library.TryGetCharacter(characterId, out var character))
+            {
+                Debug.LogError($"NovelForge: no character registered for id '{characterId}' — skipping actor.");
+                yield break;
+            }
+
+            yield return ShowActorSprite(character, characterId, emotion, position);
+        }
+
+        private IEnumerator ShowActorSprite(CharacterDefinition character, string characterId, string emotion, string position)
+        {
+            if (!character.TryGetSprite(emotion, out var sprite))
+            {
+                Debug.LogError($"NovelForge: character '{characterId}' has no sprite for emotion '{emotion}' — leaving actor unchanged.");
+            }
+            else if (!TryFindSlot(position, out var slotView))
+            {
+                Debug.LogError($"NovelForge: no position slot registered for '{position}' — skipping actor display.");
+            }
+            else if (slotView == null)
+            {
+                Debug.LogError($"NovelForge: position slot '{position}' has no ActorView assigned — skipping actor display.");
+            }
+            else
+            {
+                yield return slotView.ShowSprite(sprite);
+            }
         }
 
         private bool TryFindSlot(string position, out ActorView view)

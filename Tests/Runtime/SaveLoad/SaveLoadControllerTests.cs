@@ -187,6 +187,45 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void SaveTo_ThenLoadInto_RestoresSceneState()
+        {
+            var storage = new JsonSaveStorage(_directory);
+            var script = new ScriptCompiler().Compile(Source);
+            var context = new StoryContext();
+            context.Scene.Background = "room";
+            context.Scene.Music = "theme";
+            context.Scene.Actors["left"] = new ActorState { CharacterId = "Alice", Emotion = "happy" };
+            new SaveLoadController(new PlaybackController(script, context), context, "test-script", storage).SaveTo("slot1");
+
+            var newContext = new StoryContext();
+            var result = new SaveLoadController(new PlaybackController(script, newContext), newContext, "test-script", storage).LoadInto("slot1");
+
+            Assert.AreEqual(SaveLoadStatus.Success, result.Status);
+            Assert.AreEqual("room", newContext.Scene.Background);
+            Assert.IsNull(newContext.Scene.Cg);
+            Assert.AreEqual("theme", newContext.Scene.Music);
+            Assert.AreEqual("Alice", newContext.Scene.Actors["left"].CharacterId);
+            Assert.AreEqual("happy", newContext.Scene.Actors["left"].Emotion);
+        }
+
+        [Test]
+        public void LoadInto_Failure_LeavesSceneUntouched()
+        {
+            var storage = new JsonSaveStorage(_directory);
+            var script = new ScriptCompiler().Compile(Source);
+            var savingContext = new StoryContext();
+            savingContext.Scene.Background = "saved-room";
+            new SaveLoadController(new PlaybackController(script, savingContext), savingContext, "story-a", storage).SaveTo("slot1");
+
+            var context = new StoryContext();
+            context.Scene.Background = "current-room";
+            var result = new SaveLoadController(new PlaybackController(script, context), context, "story-b", storage).LoadInto("slot1");
+
+            Assert.AreEqual(SaveLoadStatus.ScriptMismatch, result.Status);
+            Assert.AreEqual("current-room", context.Scene.Background);
+        }
+
+        [Test]
         public void SlotExists_DelegatesToStorage()
         {
             var storage = new JsonSaveStorage(_directory);

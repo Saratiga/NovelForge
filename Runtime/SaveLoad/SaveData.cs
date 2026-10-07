@@ -9,5 +9,6 @@ namespace NovelForge.Runtime
         public ScriptPosition Position;
         public ScriptPosition[] CallStack;
         public Dictionary<string, object> Variables;
+        public SceneState Scene;
     }
 }

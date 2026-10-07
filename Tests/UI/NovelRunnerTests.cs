@@ -82,6 +82,22 @@ namespace NovelForge.UI.Tests
         }
 
         [Test]
+        public void RunAndNotify_ReplaysSceneBeforeFirstCommand()
+        {
+            NovelRunner runner = CreateRunner();
+            runner.script = CreateScriptAsset("label a\nAlice: hi\n");
+            runner.Prepare();
+            var recorder = new NovelForge.Runtime.Tests.OrderRecordingPresenter();
+            runner.Context.Backgrounds = recorder;
+            runner.Context.Dialogue = recorder;
+            runner.Context.Scene.Background = "room";
+
+            Pump(runner.RunAndNotify());
+
+            CollectionAssert.AreEqual(new[] { "bg:room", "line:Alice:hi" }, recorder.Log);
+        }
+
+        [Test]
         public void Play_MissingScript_LogsError_DoesNotThrow_PlaybackStaysNull()
         {
             NovelRunner runner = CreateRunner();
