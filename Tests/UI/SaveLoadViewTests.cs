@@ -148,6 +148,24 @@ namespace NovelForge.UI.Tests
         }
 
         [Test]
+        public void LoadMode_ScriptMismatch_ShowsDifferentStoryMessage()
+        {
+            var storage = new JsonSaveStorage(_directory);
+            var script = new ScriptCompiler().Compile("label start\nreturn\n");
+            var otherContext = new StoryContext();
+            new SaveLoadController(new PlaybackController(script, otherContext), otherContext, "other-story", storage).SaveTo("slot1");
+            var view = CreateView(out _, "slot1");
+            view.ShowLoadMode();
+            bool loadSucceeded = false;
+            view.OnLoadSucceeded += () => loadSucceeded = true;
+
+            view.slots[0].button.onClick.Invoke();
+
+            Assert.IsFalse(loadSucceeded);
+            Assert.AreEqual("This save belongs to a different story.", view.statusText.text);
+        }
+
+        [Test]
         public void Refresh_MissingSlotWiring_LogsErrorAndSkipsSlot_DoesNotThrow()
         {
             var go = new GameObject("SaveLoadView");

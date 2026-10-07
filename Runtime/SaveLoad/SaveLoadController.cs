@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace NovelForge.Runtime
@@ -19,12 +20,13 @@ namespace NovelForge.Runtime
 
         public void SaveTo(string slotId)
         {
+            NovelScript script = _playback.Script;
             PlaybackSnapshot snapshot = _playback.CreateSnapshot();
             var data = new SaveData
             {
                 ScriptId = _scriptId,
-                PointerIndex = snapshot.PointerIndex,
-                CallStack = snapshot.CallStack,
+                Position = script.ToPosition(snapshot.PointerIndex),
+                CallStack = Array.ConvertAll(snapshot.CallStack, script.ToPosition),
                 Variables = new Dictionary<string, object>(_context.Variables.Export()),
             };
             _storage.Save(slotId, data);
@@ -40,12 +42,21 @@ namespace NovelForge.Runtime
             if (result.Status != SaveLoadStatus.Success)
                 return result;
 
-            _context.Variables.Import(result.Data.Variables);
-            _playback.RestoreSnapshot(new PlaybackSnapshot
-            {
-                PointerIndex = result.Data.PointerIndex,
-                CallStack = result.Data.CallStack,
-            });
+            SaveData data = result.Data;
+            if (data.ScriptId != _scriptId)
+                return new SaveLoadResult { Status = SaveLoadStatus.ScriptMismatch, Data = data, FoundSchemaVersion = data.SchemaVersion };
+
+            NovelScript script = _playback.Script;
+            ScriptPosition[] savedStack = data.CallStack ?? Array.Empty<ScriptPosition>();
+            var callStack = new int[savedStack.Length];
+            bool resolved = script.TryResolve(data.Position, out int pointerIndex);
+            for (int i = 0; resolved && i < savedStack.Length; i++)
+                resolved = script.TryResolve(savedStack[i], out callStack[i]);
+            if (!resolved)
+                return new SaveLoadResult { Status = SaveLoadStatus.Incompatible, FoundSchemaVersion = data.SchemaVersion };
+
+            _context.Variables.Import(data.Variables);
+            _playback.RestoreSnapshot(new PlaybackSnapshot { PointerIndex = pointerIndex, CallStack = callStack });
             return result;
         }
 

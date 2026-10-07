@@ -6,8 +6,8 @@ namespace NovelForge.Runtime
     {
         public int SchemaVersion;
         public string ScriptId;
-        public int PointerIndex;
-        public int[] CallStack;
+        public ScriptPosition Position;
+        public ScriptPosition[] CallStack;
         public Dictionary<string, object> Variables;
     }
 }

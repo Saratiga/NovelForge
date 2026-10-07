@@ -66,8 +66,8 @@ label greet
             var saveData = new SaveData
             {
                 ScriptId = "test-script",
-                PointerIndex = snapshot.PointerIndex,
-                CallStack = snapshot.CallStack,
+                Position = script.ToPosition(snapshot.PointerIndex),
+                CallStack = System.Array.ConvertAll(snapshot.CallStack, script.ToPosition),
                 Variables = new Dictionary<string, object>(firstHalfContext.Variables.Export()),
             };
             storage.Save("slot1", saveData);
@@ -80,10 +80,16 @@ label greet
             var secondHalfContext = new StoryContext { Dialogue = secondHalfDialogue };
             secondHalfContext.Variables.Import(result.Data.Variables);
             var secondHalfController = new PlaybackController(script, secondHalfContext);
+            Assert.IsTrue(script.TryResolve(result.Data.Position, out int pointerIndex));
+            int[] callStack = System.Array.ConvertAll(result.Data.CallStack, position =>
+            {
+                Assert.IsTrue(script.TryResolve(position, out int index));
+                return index;
+            });
             secondHalfController.RestoreSnapshot(new PlaybackSnapshot
             {
-                PointerIndex = result.Data.PointerIndex,
-                CallStack = result.Data.CallStack,
+                PointerIndex = pointerIndex,
+                CallStack = callStack,
             });
 
             LogAssert.Expect(LogType.Error, "NovelForge: 'return' with an empty call stack — ending playback.");

@@ -96,6 +96,9 @@ namespace NovelForge.UI
                     case SaveLoadStatus.Incompatible:
                         SetStatus("This save is from an incompatible version.");
                         break;
+                    case SaveLoadStatus.ScriptMismatch:
+                        SetStatus("This save belongs to a different story.");
+                        break;
                 }
             }
         }

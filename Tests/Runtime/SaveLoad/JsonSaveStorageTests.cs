@@ -34,8 +34,8 @@ namespace NovelForge.Runtime.Tests
             var data = new SaveData
             {
                 ScriptId = "chapter1",
-                PointerIndex = 5,
-                CallStack = new[] { 10, 20 },
+                Position = new ScriptPosition { Label = "a", Offset = 5 },
+                CallStack = new[] { new ScriptPosition { Label = "b", Offset = 1 } },
                 Variables = new Dictionary<string, object> { ["relationship"] = 3 },
             };
 
@@ -44,8 +44,11 @@ namespace NovelForge.Runtime.Tests
 
             Assert.AreEqual(SaveLoadStatus.Success, result.Status);
             Assert.AreEqual("chapter1", result.Data.ScriptId);
-            Assert.AreEqual(5, result.Data.PointerIndex);
-            CollectionAssert.AreEqual(new[] { 10, 20 }, result.Data.CallStack);
+            Assert.AreEqual("a", result.Data.Position.Label);
+            Assert.AreEqual(5, result.Data.Position.Offset);
+            Assert.AreEqual(1, result.Data.CallStack.Length);
+            Assert.AreEqual("b", result.Data.CallStack[0].Label);
+            Assert.AreEqual(1, result.Data.CallStack[0].Offset);
             Assert.AreEqual(3, Convert.ToInt32(result.Data.Variables["relationship"]));
         }
 

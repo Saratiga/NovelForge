@@ -5,5 +5,6 @@ namespace NovelForge.Runtime
         Success,
         NotFound,
         Incompatible,
+        ScriptMismatch,
     }
 }

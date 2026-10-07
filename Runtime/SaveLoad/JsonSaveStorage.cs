@@ -6,7 +6,7 @@ namespace NovelForge.Runtime
 {
     public class JsonSaveStorage : ISaveStorage
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         private readonly string _directory;
 
