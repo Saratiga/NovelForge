@@ -14,6 +14,7 @@ namespace NovelForge.Runtime
             _context = context;
         }
 
+        public NovelScript Script => _script;
         public int CurrentIndex => _pointer.Current;
         public bool IsFinished => _pointer.Current >= _script.Commands.Count;
 
