@@ -96,6 +96,39 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void Replay_WithDetachedRunner_HandsMusicOffInsteadOfWaiting()
+        {
+            var recorder = new OrderRecordingPresenter();
+            var context = new StoryContext { Backgrounds = recorder, Audio = recorder, Dialogue = recorder };
+            context.Scene.Background = "room";
+            context.Scene.Music = "theme";
+            context.Scene.Actors["left"] = new ActorState { CharacterId = "Alice", Emotion = "happy" };
+            var detached = new System.Collections.Generic.List<System.Collections.IEnumerator>();
+
+            CoroutineTestUtil.RunToCompletion(context.Scene.Replay(context, detached.Add));
+
+            CollectionAssert.AreEqual(new[] { "bg:room", "actor:Alice:happy:left" }, recorder.Log);
+            Assert.AreEqual(1, detached.Count);
+            CoroutineTestUtil.RunToCompletion(detached[0]);
+            Assert.AreEqual("music:theme", recorder.Log[2]);
+        }
+
+        [Test]
+        public void CopyFrom_NullActorsOrEntries_DoesNotThrow()
+        {
+            var withNullEntry = new SceneState { Background = "room" };
+            withNullEntry.Actors["left"] = null;
+            var withNullActors = new SceneState { Actors = null };
+            var scene = new SceneState();
+
+            Assert.DoesNotThrow(() => scene.CopyFrom(withNullEntry));
+            Assert.AreEqual("room", scene.Background);
+            CollectionAssert.IsEmpty(scene.Actors);
+            Assert.DoesNotThrow(() => scene.CopyFrom(withNullActors));
+            CollectionAssert.IsEmpty(scene.Actors);
+        }
+
+        [Test]
         public void Replay_EmptyScene_CallsNothing()
         {
             var recorder = new OrderRecordingPresenter();

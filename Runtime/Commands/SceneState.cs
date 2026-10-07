@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -19,14 +20,22 @@ namespace NovelForge.Runtime
         // Keyed by position; a line without a position uses "".
         public Dictionary<string, ActorState> Actors = new();
 
-        public IEnumerator Replay(StoryContext context)
+        public IEnumerator Replay(StoryContext context, Action<IEnumerator> runDetached = null)
         {
             if (Background != null && context.Backgrounds != null)
                 yield return context.Backgrounds.ShowBackground(Background);
             if (Cg != null && context.Backgrounds != null)
                 yield return context.Backgrounds.ShowCg(Cg);
             if (Music != null && context.Audio != null)
-                yield return context.Audio.PlayMusic(Music);
+            {
+                // A music crossfade is long and nothing visual depends on it, so a host that
+                // can run coroutines in parallel starts it instead of waiting for it.
+                IEnumerator music = context.Audio.PlayMusic(Music);
+                if (runDetached != null)
+                    runDetached(music);
+                else
+                    yield return music;
+            }
             if (context.Dialogue == null)
                 yield break;
 
@@ -44,11 +53,15 @@ namespace NovelForge.Runtime
             Background = other?.Background;
             Cg = other?.Cg;
             Music = other?.Music;
+            Actors ??= new Dictionary<string, ActorState>();
             Actors.Clear();
-            if (other == null)
+            if (other?.Actors == null)
                 return;
             foreach (var pair in other.Actors)
-                Actors[pair.Key] = new ActorState { CharacterId = pair.Value.CharacterId, Emotion = pair.Value.Emotion };
+            {
+                if (pair.Value != null)
+                    Actors[pair.Key] = new ActorState { CharacterId = pair.Value.CharacterId, Emotion = pair.Value.Emotion };
+            }
         }
     }
 }

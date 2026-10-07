@@ -74,7 +74,7 @@ namespace NovelForge.UI
 
         internal IEnumerator RunAndNotify()
         {
-            yield return Context.Scene.Replay(Context);
+            yield return Context.Scene.Replay(Context, routine => StartCoroutine(routine));
             yield return Playback.RunAll();
             OnFinished?.Invoke();
         }

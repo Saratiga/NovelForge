@@ -60,6 +60,13 @@ namespace NovelForge.Runtime.Tests
             Assert.IsFalse(Compile(Src).TryResolve(new ScriptPosition { Label = "zzz", Offset = 0 }, out _));
         }
 
+        [TestCase("a")]
+        [TestCase(null)]
+        public void TryResolve_NegativeOffset_ReturnsFalse(string label)
+        {
+            Assert.IsFalse(Compile(Src).TryResolve(new ScriptPosition { Label = label, Offset = -1 }, out _));
+        }
+
         [Test]
         public void TryResolve_OffsetPastLabelBlock_ReturnsLabelStartWithWarning()
         {

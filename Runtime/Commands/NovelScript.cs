@@ -42,6 +42,12 @@ namespace NovelForge.Runtime
 
         public bool TryResolve(ScriptPosition position, out int commandIndex)
         {
+            if (position.Offset < 0)
+            {
+                commandIndex = -1;
+                return false;
+            }
+
             if (position.Label == null)
             {
                 commandIndex = Math.Min(position.Offset, Commands.Count);

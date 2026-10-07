@@ -35,6 +35,20 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void ShowSprite_SameSpriteAlreadyFullyShown_DoesNotRefade()
+        {
+            var sprite = CreateSprite();
+            var view = CreateView(new FakeDeltaTimeSource { DeltaTime = 1f });
+            CoroutineTestUtil.RunToCompletion(view.ShowSprite(sprite));
+            view.TimeSource = new FakeDeltaTimeSource { DeltaTime = 0.01f };
+
+            var again = view.ShowSprite(sprite);
+            again.MoveNext();
+
+            Assert.AreEqual(1f, view.spriteRenderer.color.a, 0.001f);
+        }
+
+        [Test]
         public void ShowSprite_FadesInToFullAlpha()
         {
             var sprite = CreateSprite();

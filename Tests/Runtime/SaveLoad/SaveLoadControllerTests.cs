@@ -225,6 +225,27 @@ namespace NovelForge.Runtime.Tests
             Assert.AreEqual("current-room", context.Scene.Background);
         }
 
+        [TestCase("null")]
+        [TestCase("{\"left\":null}")]
+        public void LoadInto_HandEditedSceneWithNullActors_SucceedsWithoutActors(string actorsJson)
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(Path.Combine(_directory, "slot1.json"),
+                "{\"SchemaVersion\":2,\"ScriptId\":\"test-script\",\"Position\":{\"Label\":null,\"Offset\":0}," +
+                "\"CallStack\":[],\"Variables\":{\"score\":3},\"Scene\":{\"Background\":\"room\",\"Actors\":" + actorsJson + "}}");
+            var script = new ScriptCompiler().Compile(Source);
+            var context = new StoryContext();
+            var controller = new SaveLoadController(new PlaybackController(script, context), context, "test-script", new JsonSaveStorage(_directory));
+
+            SaveLoadResult result = default;
+            Assert.DoesNotThrow(() => result = controller.LoadInto("slot1"));
+
+            Assert.AreEqual(SaveLoadStatus.Success, result.Status);
+            Assert.AreEqual(3, context.Variables.GetInt("score"));
+            Assert.AreEqual("room", context.Scene.Background);
+            CollectionAssert.IsEmpty(context.Scene.Actors);
+        }
+
         [Test]
         public void SlotExists_DelegatesToStorage()
         {

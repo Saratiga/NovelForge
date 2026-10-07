@@ -97,6 +97,41 @@ namespace NovelForge.UI.Tests
             CollectionAssert.AreEqual(new[] { "bg:room", "line:Alice:hi" }, recorder.Log);
         }
 
+        private class SlowMusicPresenter : IAudioPresenter
+        {
+            private readonly System.Collections.Generic.List<string> _log;
+
+            public SlowMusicPresenter(System.Collections.Generic.List<string> log) => _log = log;
+
+            public IEnumerator PlayMusic(string trackId)
+            {
+                for (int i = 0; i < 100; i++)
+                    yield return null;
+                _log.Add($"music-done:{trackId}");
+            }
+
+            public IEnumerator PlaySfx(string clipId)
+            {
+                yield break;
+            }
+        }
+
+        [Test]
+        public void RunAndNotify_ReplayedMusicDoesNotDelayFirstLine()
+        {
+            NovelRunner runner = CreateRunner();
+            runner.script = CreateScriptAsset("label a\nAlice: hi\n");
+            runner.Prepare();
+            var recorder = new NovelForge.Runtime.Tests.OrderRecordingPresenter();
+            runner.Context.Dialogue = recorder;
+            runner.Context.Audio = new SlowMusicPresenter(recorder.Log);
+            runner.Context.Scene.Music = "theme";
+
+            Pump(runner.RunAndNotify());
+
+            Assert.AreEqual("line:Alice:hi", recorder.Log[0]);
+        }
+
         [Test]
         public void Play_MissingScript_LogsError_DoesNotThrow_PlaybackStaysNull()
         {

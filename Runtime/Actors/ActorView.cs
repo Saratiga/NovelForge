@@ -18,6 +18,11 @@ namespace NovelForge.Runtime
                 yield break;
             }
 
+            // Already on screen (e.g. replayed after a load, or two lines in a row with the
+            // same pose): re-fading from zero would flicker.
+            if (spriteRenderer.sprite == sprite && spriteRenderer.color.a >= 1f)
+                yield break;
+
             spriteRenderer.sprite = sprite;
             SetAlpha(0f);
 
