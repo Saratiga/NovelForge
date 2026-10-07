@@ -1,17 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace NovelForge.Runtime
 {
     public class ScriptCompiler
     {
-        private static readonly Regex DialogueLine = new(@"^([A-Za-z_][A-Za-z0-9_]*):\s+(.+)$", RegexOptions.Compiled);
-        private static readonly Regex SetLine = new(@"^set\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|\+=|-=)\s*(.+)$", RegexOptions.Compiled);
-        private static readonly Regex IfLine = new(@"^if\s+([A-Za-z_][A-Za-z0-9_]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$", RegexOptions.Compiled);
-        private static readonly Regex ChoiceOptionLine = new(@"^""([^""]*)""(?:\s*@([A-Za-z_][A-Za-z0-9_]*))?\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
-
         private readonly CommandRegistry _registry;
 
         private enum BlockKind { If, Else }
@@ -60,9 +54,8 @@ namespace NovelForge.Runtime
                     continue;
                 }
 
-                if (line.StartsWith("label ", StringComparison.Ordinal))
+                if (DslGrammar.TryParseLabel(line, out string name))
                 {
-                    string name = line.Substring("label ".Length).Trim();
                     if (labels.ContainsKey(name))
                         throw new ParseException(lineNumber, $"Duplicate label '{name}'.");
                     labels[name] = commands.Count;
@@ -78,23 +71,15 @@ namespace NovelForge.Runtime
                     continue;
                 }
 
-                if (line.StartsWith("jump ", StringComparison.Ordinal))
+                if (DslGrammar.TryParseJump(line, out string target, out bool isGosub))
                 {
-                    string target = line.Substring("jump ".Length).Trim();
                     pendingLabelRefs.Add((commands.Count, target, null, lineNumber));
-                    commands.Add(Attach(new JumpCommand(-1), ref pendingComment));
+                    Command jump = isGosub ? new GosubCommand(-1) : new JumpCommand(-1);
+                    commands.Add(Attach(jump, ref pendingComment));
                     continue;
                 }
 
-                if (line.StartsWith("gosub ", StringComparison.Ordinal))
-                {
-                    string target = line.Substring("gosub ".Length).Trim();
-                    pendingLabelRefs.Add((commands.Count, target, null, lineNumber));
-                    commands.Add(Attach(new GosubCommand(-1), ref pendingComment));
-                    continue;
-                }
-
-                var setMatch = SetLine.Match(line);
+                var setMatch = DslGrammar.SetLine.Match(line);
                 if (setMatch.Success)
                 {
                     string varName = setMatch.Groups[1].Value;
@@ -110,7 +95,7 @@ namespace NovelForge.Runtime
                     continue;
                 }
 
-                var ifMatch = IfLine.Match(line);
+                var ifMatch = DslGrammar.IfLine.Match(line);
                 if (ifMatch.Success)
                 {
                     string varName = ifMatch.Groups[1].Value;
@@ -134,7 +119,7 @@ namespace NovelForge.Runtime
                             lookahead++;
                             continue;
                         }
-                        var optionMatch = ChoiceOptionLine.Match(nextLine);
+                        var optionMatch = DslGrammar.ChoiceOptionLine.Match(nextLine);
                         if (!optionMatch.Success)
                             break;
                         string explicitOptionId = optionMatch.Groups[2].Success ? optionMatch.Groups[2].Value : null;
@@ -184,7 +169,7 @@ namespace NovelForge.Runtime
                     continue;
                 }
 
-                var dialogueMatch = DialogueLine.Match(line);
+                var dialogueMatch = DslGrammar.DialogueLine.Match(line);
                 if (dialogueMatch.Success)
                 {
                     string characterId = dialogueMatch.Groups[1].Value;
@@ -263,17 +248,14 @@ namespace NovelForge.Runtime
             string id = null;
             string text = rest;
 
-            var emotionMatch = Regex.Match(text, @"#(\w+)");
+            var emotionMatch = DslGrammar.EmotionTag.Match(text);
             if (emotionMatch.Success)
             {
                 emotion = emotionMatch.Groups[1].Value;
                 text = text.Remove(emotionMatch.Index, emotionMatch.Length).TrimEnd();
             }
 
-            // Anchored to a whitespace-delimited token and restricted to the same
-            // identifier grammar as ChoiceOptionLine's @id, so this can't misfire on an
-            // "@" embedded mid-word (e.g. an email address like "bob@example.com").
-            var idMatch = Regex.Match(text, @"(?<=^|\s)@([A-Za-z_][A-Za-z0-9_]*)\b");
+            var idMatch = DslGrammar.IdTag.Match(text);
             if (idMatch.Success)
             {
                 id = idMatch.Groups[1].Value;
@@ -283,15 +265,11 @@ namespace NovelForge.Runtime
             // Known limitation: dialogue that legitimately ends in the literal word
             // "left"/"right"/"center" will be misread as a position tag. Acceptable
             // for this DSL's scope — rephrase the line if that ever comes up.
-            foreach (string candidate in new[] { "left", "right", "center" })
+            var posMatch = DslGrammar.TrailingPosition.Match(text);
+            if (posMatch.Success)
             {
-                var posMatch = Regex.Match(text, $@"\b{candidate}\b$");
-                if (posMatch.Success)
-                {
-                    position = candidate;
-                    text = text.Remove(posMatch.Index).TrimEnd();
-                    break;
-                }
+                position = posMatch.Groups[1].Value;
+                text = text.Remove(posMatch.Index).TrimEnd();
             }
 
             return (text.Trim(), emotion, position, id);

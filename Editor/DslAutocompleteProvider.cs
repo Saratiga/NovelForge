@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
+using NovelForge.Runtime;
 using UnityEngine;
 
 namespace NovelForge.Editor
 {
     public static class DslAutocompleteProvider
     {
-        private static readonly Regex LabelLine = new(@"^\s*label\s+(\S+)\s*$", RegexOptions.Compiled);
-
         public static IReadOnlyList<string> GetCandidates(string source, int cursorPosition, IEnumerable<string> commands, IEnumerable<string> characters)
         {
             string partial = ExtractPartialWord(source, cursorPosition);
@@ -63,9 +61,8 @@ namespace NovelForge.Editor
 
             foreach (string line in source.Replace("\r\n", "\n").Split('\n'))
             {
-                var match = LabelLine.Match(line);
-                if (match.Success)
-                    yield return match.Groups[1].Value;
+                if (DslGrammar.TryParseLabel(line.Trim(), out string name))
+                    yield return name;
             }
         }
     }

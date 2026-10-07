@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace NovelForge.Runtime
@@ -15,12 +14,7 @@ namespace NovelForge.Runtime
 
         private static readonly string[] BuiltinNames = { "bg", "cg", "music", "sfx", "wait" };
 
-        private static readonly HashSet<string> ReservedKeywords = new()
-        {
-            "label", "jump", "gosub", "set", "if", "return", "else", "endif", "choice",
-        };
-
-        private static readonly Regex CommandName = new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
+        private static readonly HashSet<string> ReservedKeywords = new(DslGrammar.Keywords);
 
         // Validated once per domain so a broken [NovelCommand] logs once, not on every
         // CreateDefault() (the script editor window calls it on every keystroke).
@@ -74,7 +68,7 @@ namespace NovelForge.Runtime
 
             foreach (var (name, type) in candidates)
             {
-                if (name == null || !CommandName.IsMatch(name))
+                if (!DslGrammar.IsIdentifier(name))
                 {
                     Debug.LogError($"NovelForge: [NovelCommand] name '{name}' on '{type.FullName}' is not a valid command name (letters, digits and '_', not starting with a digit) — skipped.");
                     continue;

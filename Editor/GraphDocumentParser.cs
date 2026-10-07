@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using NovelForge.Runtime;
 
 namespace NovelForge.Editor
 {
@@ -112,8 +113,6 @@ namespace NovelForge.Editor
 
     public static class GraphDocumentParser
     {
-        private static readonly Regex ChoiceOptionLine = new(@"^""([^""]*)""(?:\s*@([A-Za-z_][A-Za-z0-9_]*))?\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
-
         public static GraphDocument Parse(string source)
         {
             var nodes = new List<GraphNode>();
@@ -125,11 +124,9 @@ namespace NovelForge.Editor
             var labelStarts = new List<(int LineIndex, string Name, int CommentStart)>();
             for (int i = 0; i < lines.Length; i++)
             {
-                string trimmed = lines[i].Trim();
-                if (!trimmed.StartsWith("label ", StringComparison.Ordinal))
+                if (!DslGrammar.TryParseLabel(lines[i].Trim(), out string name))
                     continue;
 
-                string name = trimmed.Substring("label ".Length).Trim();
                 int commentStart = i;
                 int j = i - 1;
                 while (j >= 0 && lines[j].Trim().StartsWith("//", StringComparison.Ordinal))
@@ -225,7 +222,7 @@ namespace NovelForge.Editor
                 return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), lastTrimmed.Substring("gosub ".Length).Trim(), true, false, leadingComment);
             }
 
-            if (ChoiceOptionLine.IsMatch(lastTrimmed))
+            if (DslGrammar.ChoiceOptionLine.IsMatch(lastTrimmed))
             {
                 var options = new List<ChoiceOption>();
                 int i = lastContentIndex;
@@ -243,7 +240,7 @@ namespace NovelForge.Editor
                         choiceKeywordIndex = i;
                         break;
                     }
-                    Match match = ChoiceOptionLine.Match(trimmed);
+                    Match match = DslGrammar.ChoiceOptionLine.Match(trimmed);
                     if (!match.Success)
                         break;
                     string explicitId = match.Groups[2].Success ? match.Groups[2].Value : null;

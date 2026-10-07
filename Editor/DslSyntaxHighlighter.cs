@@ -1,22 +1,14 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using NovelForge.Runtime;
 using UnityEditor;
 
 namespace NovelForge.Editor
 {
     public static class DslSyntaxHighlighter
     {
-        private static readonly Regex DialogueLine = new(@"^([A-Za-z_][A-Za-z0-9_]*):\s+(.+)$", RegexOptions.Compiled);
-        private static readonly Regex ChoiceOptionLine = new(@"^(""[^""]*"")(?:\s*(@[A-Za-z_][A-Za-z0-9_]*))?\s*->\s*([A-Za-z_][A-Za-z0-9_]*)$", RegexOptions.Compiled);
-        private static readonly Regex EmotionTag = new(@"#\w+", RegexOptions.Compiled);
-        private static readonly Regex IdTag = new(@"(?<=^|\s)@[A-Za-z_][A-Za-z0-9_]*\b", RegexOptions.Compiled);
-        private static readonly Regex PositionKeyword = new(@"\b(left|right|center)\b$", RegexOptions.Compiled);
-
-        private static readonly HashSet<string> Keywords = new()
-        {
-            "label", "jump", "gosub", "set", "if", "return", "else", "endif", "choice",
-        };
+        private static readonly HashSet<string> Keywords = new(DslGrammar.Keywords);
 
         public static string ToRichText(string source)
         {
@@ -49,15 +41,16 @@ namespace NovelForge.Editor
             if (Keywords.Contains(firstWord))
                 spans.Add((indent, firstWord.Length, KeywordColor));
 
-            var choiceMatch = ChoiceOptionLine.Match(trimmed);
+            var choiceMatch = DslGrammar.ChoiceOptionLine.Match(trimmed);
             if (choiceMatch.Success)
             {
-                var quoteGroup = choiceMatch.Groups[1];
-                spans.Add((indent + quoteGroup.Index, quoteGroup.Length, StringLiteralColor));
+                // Shared groups exclude the quotes and the '@'; widen the spans to color them too.
+                var textGroup = choiceMatch.Groups[1];
+                spans.Add((indent + textGroup.Index - 1, textGroup.Length + 2, StringLiteralColor));
 
                 var idGroup = choiceMatch.Groups[2];
                 if (idGroup.Success)
-                    spans.Add((indent + idGroup.Index, idGroup.Length, TagColor));
+                    spans.Add((indent + idGroup.Index - 1, idGroup.Length + 1, TagColor));
 
                 var labelGroup = choiceMatch.Groups[3];
                 spans.Add((indent + labelGroup.Index, labelGroup.Length, LabelColor));
@@ -65,7 +58,7 @@ namespace NovelForge.Editor
                 return Render(line, spans);
             }
 
-            var dialogueMatch = DialogueLine.Match(trimmed);
+            var dialogueMatch = DslGrammar.DialogueLine.Match(trimmed);
             if (dialogueMatch.Success)
             {
                 var idGroup = dialogueMatch.Groups[1];
@@ -75,15 +68,15 @@ namespace NovelForge.Editor
                 string rest = restGroup.Value;
                 int restOffset = indent + restGroup.Index;
 
-                var emotionMatch = EmotionTag.Match(rest);
+                var emotionMatch = DslGrammar.EmotionTag.Match(rest);
                 if (emotionMatch.Success)
                     spans.Add((restOffset + emotionMatch.Index, emotionMatch.Length, TagColor));
 
-                var idTagMatch = IdTag.Match(rest);
+                var idTagMatch = DslGrammar.IdTag.Match(rest);
                 if (idTagMatch.Success)
                     spans.Add((restOffset + idTagMatch.Index, idTagMatch.Length, TagColor));
 
-                var posMatch = PositionKeyword.Match(rest);
+                var posMatch = DslGrammar.TrailingPosition.Match(rest);
                 if (posMatch.Success)
                     spans.Add((restOffset + posMatch.Index, posMatch.Length, KeywordColor));
 
