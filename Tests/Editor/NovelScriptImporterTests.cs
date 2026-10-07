@@ -51,5 +51,16 @@ namespace NovelForge.Editor.Tests
             Assert.IsNotNull(asset);
             Assert.AreEqual("jump nowhere\n", asset.Source);
         }
+
+        [Test]
+        public void ScriptWithAttributedCustomCommand_ImportsWithoutError()
+        {
+            string assetPath = WriteScriptFile("custom.nfscript", "label start\ntest_editor_cmd 1\n");
+
+            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
+
+            LogAssert.NoUnexpectedReceived();
+            Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<NovelScriptAsset>(assetPath));
+        }
     }
 }

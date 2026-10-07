@@ -36,6 +36,42 @@
 | Звуковой эффект | `sfx <id>` | Проигрывает одиночный клип из пула голосов. |
 | Пауза | `wait <seconds>` | Приостанавливает скрипт на заданное число секунд. |
 
+## Собственные команды
+
+Свою команду DSL можно добавить без правок пакета: унаследуйте класс от `Command` и
+пометьте его атрибутом `[NovelCommand("имя")]`.
+
+```csharp
+using System.Collections;
+using System.Globalization;
+using NovelForge.Runtime;
+
+[NovelCommand("shake")]
+public class ShakeCommand : Command
+{
+    private readonly float _seconds;
+
+    public ShakeCommand(string rawArgs) =>
+        _seconds = float.Parse(rawArgs.Trim(), CultureInfo.InvariantCulture);
+
+    public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
+    {
+        // трясём камеру _seconds секунд
+        yield break;
+    }
+}
+```
+
+В скрипте: `shake 0.5`.
+
+- Класс не абстрактный и имеет публичный конструктор `(string rawArgs)` — в него
+  приходит всё, что стоит после имени команды.
+- Имя не должно совпадать со встроенными `bg`, `cg`, `music`, `sfx`, `wait` и с другой
+  собственной командой; иначе в консоль пишется ошибка, а команда пропускается.
+- Исключение из конструктора превращается в ошибку разбора с номером строки скрипта.
+- Команду автоматически видят `NovelRunner`, `NovelScriptImporter`, Script Editor
+  (подсветка ошибок и автодополнение) и Character Editor.
+
 ## Инструменты редактора
 
 - **Script Editor** (двойной клик по ассету `.nfscript` в окне Project) — подсветка

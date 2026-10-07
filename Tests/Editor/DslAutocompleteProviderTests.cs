@@ -62,5 +62,14 @@ namespace NovelForge.Editor.Tests
             Assert.DoesNotThrow(() => DslAutocompleteProvider.GetCandidates(null, 0, System.Array.Empty<string>(), System.Array.Empty<string>()));
             Assert.DoesNotThrow(() => DslAutocompleteProvider.GetCandidates(string.Empty, 0, null, null));
         }
+
+        [Test]
+        public void GetCandidates_WithDefaultRegistryNames_OffersCustomCommand()
+        {
+            var result = DslAutocompleteProvider.GetCandidates("test_e", 6,
+                NovelForge.Runtime.CommandRegistry.CreateDefault().RegisteredNames, System.Array.Empty<string>());
+
+            CollectionAssert.Contains(result, "test_editor_cmd");
+        }
     }
 }
