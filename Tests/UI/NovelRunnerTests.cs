@@ -60,7 +60,20 @@ namespace NovelForge.UI.Tests
             Assert.AreSame(runner.choices, runner.Context.Choices);
             Assert.AreSame(runner.audio, runner.Context.Audio);
             Assert.AreSame(runner.backgrounds, runner.Context.Backgrounds);
-            Assert.AreSame(runner, runner.Context.Timing);
+            Assert.IsInstanceOf<UnityTimingPresenter>(runner.Context.Timing);
+        }
+
+        [Test]
+        public void Prepare_UsesAssignedTimingPresenter()
+        {
+            NovelRunner runner = CreateRunner();
+            runner.script = CreateScriptAsset("label start\nreturn\n");
+            var timing = new NovelForge.Runtime.Tests.RecordingTimingPresenter();
+            runner.Timing = timing;
+
+            runner.Prepare();
+
+            Assert.AreSame(timing, runner.Context.Timing);
         }
 
         [Test]

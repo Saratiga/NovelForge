@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace NovelForge.UI
 {
-    public class NovelRunner : MonoBehaviour, ITimingPresenter
+    public class NovelRunner : MonoBehaviour
     {
         [SerializeField] internal NovelScriptAsset script;
         [SerializeField] internal DialoguePresenter dialogue;
@@ -16,6 +16,7 @@ namespace NovelForge.UI
 
         public StoryContext Context { get; private set; }
         public PlaybackController Playback { get; private set; }
+        public ITimingPresenter Timing { get; set; } = new UnityTimingPresenter();
         public event Action OnFinished;
 
         public void Prepare(NovelScriptAsset scriptToPlay = null)
@@ -47,7 +48,7 @@ namespace NovelForge.UI
                 Choices = choices,
                 Audio = audio,
                 Backgrounds = backgrounds,
-                Timing = this,
+                Timing = Timing,
                 Localization = localizationJson != null ? LocalizationTable.FromJson(localizationJson.text) : null,
             };
             Playback = new PlaybackController(compiled, Context);
@@ -77,11 +78,6 @@ namespace NovelForge.UI
             yield return Context.Scene.Replay(Context, routine => StartCoroutine(routine));
             yield return Playback.RunAll();
             OnFinished?.Invoke();
-        }
-
-        public IEnumerator Wait(float seconds)
-        {
-            yield return new WaitForSeconds(seconds);
         }
     }
 }
