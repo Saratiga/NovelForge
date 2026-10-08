@@ -185,75 +185,25 @@ namespace NovelForge.Editor
         // input that's simply kept as opaque Body text rather than rejected.
         private static GraphNode BuildNode(string[] lines, int start, int end, string labelName, string leadingComment)
         {
-            int lastContentIndex = -1;
-            for (int i = end - 1; i >= start; i--)
-            {
-                string trimmed = lines[i].Trim();
-                if (trimmed.Length > 0 && !trimmed.StartsWith("//", StringComparison.Ordinal))
-                {
-                    lastContentIndex = i;
-                    break;
-                }
-            }
-
-            if (lastContentIndex < 0)
-                return new GraphNode(labelName, TrimTrailingBlankLines(lines, start, end), Array.Empty<ChoiceOption>(), null, false, false, leadingComment);
-
-            string lastTrimmed = lines[lastContentIndex].Trim();
+            int lastContentIndex = FindLastContentIndex(lines, start, end);
+            string lastTrimmed = lastContentIndex < 0 ? string.Empty : lines[lastContentIndex].Trim();
 
             if (lastTrimmed == "return")
             {
-                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
-                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
+                string body = BodyWithTrailingExtra(lines, start, lastContentIndex, lastContentIndex, end);
                 return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), null, false, true, leadingComment);
             }
 
-            if (lastTrimmed.StartsWith("jump ", StringComparison.Ordinal))
+            if (DslGrammar.TryParseJump(lastTrimmed, out string target, out bool isGosub))
             {
-                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
-                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
-                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), lastTrimmed.Substring("jump ".Length).Trim(), false, false, leadingComment);
+                string body = BodyWithTrailingExtra(lines, start, lastContentIndex, lastContentIndex, end);
+                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), target, isGosub, false, leadingComment);
             }
 
-            if (lastTrimmed.StartsWith("gosub ", StringComparison.Ordinal))
+            if (TryCollectChoice(lines, start, lastContentIndex, out List<ChoiceOption> options, out int choiceKeywordIndex))
             {
-                string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
-                string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, lastContentIndex), extra);
-                return new GraphNode(labelName, body, Array.Empty<ChoiceOption>(), lastTrimmed.Substring("gosub ".Length).Trim(), true, false, leadingComment);
-            }
-
-            if (DslGrammar.ChoiceOptionLine.IsMatch(lastTrimmed))
-            {
-                var options = new List<ChoiceOption>();
-                int i = lastContentIndex;
-                int choiceKeywordIndex = -1;
-                while (i >= start)
-                {
-                    string trimmed = lines[i].Trim();
-                    if (trimmed.Length == 0 || trimmed.StartsWith("//", StringComparison.Ordinal))
-                    {
-                        i--;
-                        continue;
-                    }
-                    if (trimmed == "choice")
-                    {
-                        choiceKeywordIndex = i;
-                        break;
-                    }
-                    Match match = DslGrammar.ChoiceOptionLine.Match(trimmed);
-                    if (!match.Success)
-                        break;
-                    string explicitId = match.Groups[2].Success ? match.Groups[2].Value : null;
-                    options.Insert(0, new ChoiceOption(match.Groups[1].Value, explicitId, match.Groups[3].Value));
-                    i--;
-                }
-
-                if (choiceKeywordIndex >= 0)
-                {
-                    string extra = TrimTrailingBlankLines(lines, lastContentIndex + 1, end);
-                    string body = CombineBodyWithTrailingExtra(JoinLines(lines, start, choiceKeywordIndex), extra);
-                    return new GraphNode(labelName, body, options, null, false, false, leadingComment);
-                }
+                string body = BodyWithTrailingExtra(lines, start, choiceKeywordIndex, lastContentIndex, end);
+                return new GraphNode(labelName, body, options, null, false, false, leadingComment);
             }
 
             // No trailing control-flow element: a fall-through block (or malformed input we
@@ -264,6 +214,50 @@ namespace NovelForge.Editor
             // NOT be trimmed the way a blank line is.
             return new GraphNode(labelName, TrimTrailingBlankLines(lines, start, end), Array.Empty<ChoiceOption>(), null, false, false, leadingComment);
         }
+
+        private static int FindLastContentIndex(string[] lines, int start, int end)
+        {
+            for (int i = end - 1; i >= start; i--)
+            {
+                if (!IsBlankOrComment(lines[i].Trim()))
+                    return i;
+            }
+            return -1;
+        }
+
+        private static bool IsBlankOrComment(string trimmed) =>
+            trimmed.Length == 0 || trimmed.StartsWith("//", StringComparison.Ordinal);
+
+        // Scans backward from a trailing option line to its "choice" keyword. False when the
+        // last line is not an option, or the options have no "choice" above them.
+        private static bool TryCollectChoice(string[] lines, int start, int lastContentIndex, out List<ChoiceOption> options, out int choiceKeywordIndex)
+        {
+            options = new List<ChoiceOption>();
+            choiceKeywordIndex = -1;
+            if (lastContentIndex < 0 || !DslGrammar.ChoiceOptionLine.IsMatch(lines[lastContentIndex].Trim()))
+                return false;
+
+            for (int i = lastContentIndex; i >= start; i--)
+            {
+                string trimmed = lines[i].Trim();
+                if (IsBlankOrComment(trimmed))
+                    continue;
+                if (trimmed == "choice")
+                {
+                    choiceKeywordIndex = i;
+                    return true;
+                }
+                Match match = DslGrammar.ChoiceOptionLine.Match(trimmed);
+                if (!match.Success)
+                    return false;
+                string explicitId = match.Groups[2].Success ? match.Groups[2].Value : null;
+                options.Insert(0, new ChoiceOption(match.Groups[1].Value, explicitId, match.Groups[3].Value));
+            }
+            return false;
+        }
+
+        private static string BodyWithTrailingExtra(string[] lines, int start, int bodyEnd, int lastContentIndex, int end) =>
+            CombineBodyWithTrailingExtra(JoinLines(lines, start, bodyEnd), TrimTrailingBlankLines(lines, lastContentIndex + 1, end));
 
         private static string TrimTrailingBlankLines(string[] lines, int start, int end)
         {
