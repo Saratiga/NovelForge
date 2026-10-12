@@ -103,6 +103,42 @@ namespace NovelForge.Editor.Tests
         }
 
         [Test]
+        public void Serialize_EmptyLabelBlock_RoundTripsExactly()
+        {
+            string source = "label a\n\nlabel b\nAlice: Bye!\nreturn\n";
+
+            var doc = GraphDocumentParser.Parse(source);
+
+            Assert.AreEqual(source, GraphDocumentFormatter.Serialize(doc));
+            Assert.AreEqual(string.Empty, doc.Nodes[0].Body);
+            Assert.IsNull(doc.Nodes[0].TrailingJumpTarget);
+        }
+
+        [Test]
+        public void Serialize_CommentOnlyBlock_RoundTripsExactly()
+        {
+            string source = "label a\n// nothing here yet\n\nlabel b\nreturn\n";
+
+            var doc = GraphDocumentParser.Parse(source);
+
+            Assert.AreEqual(source, GraphDocumentFormatter.Serialize(doc));
+            Assert.AreEqual("// nothing here yet", doc.Nodes[0].Body);
+            Assert.IsFalse(doc.Nodes[0].EndsInReturn);
+        }
+
+        [Test]
+        public void Serialize_OptionLinesWithoutChoiceKeyword_StayAsBody()
+        {
+            string source = "label a\n\"Go\" -> b\n\nlabel b\nreturn\n";
+
+            var doc = GraphDocumentParser.Parse(source);
+
+            Assert.AreEqual(source, GraphDocumentFormatter.Serialize(doc));
+            Assert.AreEqual(0, doc.Nodes[0].Choices.Count);
+            Assert.AreEqual("\"Go\" -> b", doc.Nodes[0].Body);
+        }
+
+        [Test]
         public void Serialize_ThenReparse_IsIdempotent_ForPreambleWithNoBlankLineBeforeFirstLabel()
         {
             // The formatter always inserts a blank line before every node including the first

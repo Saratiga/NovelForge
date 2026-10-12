@@ -64,6 +64,17 @@ namespace NovelForge.Editor.Tests
         }
 
         [Test]
+        public void GetCandidates_OffersLabelsTheCompilerAccepts_NotTabSeparatedOnes()
+        {
+            string source = "label spaced\nlabel\ttabbed\n";
+
+            var labels = DslAutocompleteProvider.GetCandidates(source, source.Length, System.Array.Empty<string>(), System.Array.Empty<string>());
+
+            CollectionAssert.Contains(labels, "spaced");
+            CollectionAssert.DoesNotContain(labels, "tabbed");
+        }
+
+        [Test]
         public void GetCandidates_WithDefaultRegistryNames_OffersCustomCommand()
         {
             var result = DslAutocompleteProvider.GetCandidates("test_e", 6,

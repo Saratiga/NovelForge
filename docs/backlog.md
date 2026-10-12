@@ -77,12 +77,12 @@
 
 ## Недостающие тесты
 
-- [ ] Полный цикл парсинг → сериализация в `GraphDocumentParser`/`GraphDocumentFormatter`
+- [x] Полный цикл парсинг → сериализация в `GraphDocumentParser`/`GraphDocumentFormatter`
   для граничных случаев `BuildNode`: пустой блок, блок из одних комментариев, варианты
   выбора без `choice`.
-- [ ] Отдельные тесты для `DslGrammar.TrailingPosition` и `DslGrammar.IdTag`.
+- [x] Отдельные тесты для `DslGrammar.TrailingPosition` и `DslGrammar.IdTag`.
 - [x] Сохранение после конца истории → загрузка → `PlaybackController.IsFinished`.
-- [ ] Совпадение имён двух своих команд с `[NovelCommand]`.
-- [ ] Автодополнение меток: `label\tfoo` не предлагается.
-- [ ] (Низкий приоритет) `CommandRegistry.ScanCountForTesting++` не атомарен — влияет
-  только на тест.
+- [x] Совпадение имён двух своих команд с `[NovelCommand]`.
+- [x] Автодополнение меток: `label\tfoo` не предлагается.
+- [x] (Низкий приоритет) `CommandRegistry.ScanCountForTesting++` не атомарен — влияет
+  только на тест. Сделано: `Interlocked.Increment`.

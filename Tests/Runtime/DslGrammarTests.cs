@@ -45,6 +45,42 @@ namespace NovelForge.Runtime.Tests
             Assert.IsFalse(DslGrammar.TryParseJump("jumper x", out _, out _));
         }
 
+        [TestCase("Hello there left", "left")]
+        [TestCase("I went right", "right")]
+        [TestCase("Stand in the center", "center")]
+        public void TrailingPosition_MatchesOnlyAtTheEnd(string text, string expected)
+        {
+            var match = DslGrammar.TrailingPosition.Match(text);
+
+            Assert.IsTrue(match.Success);
+            Assert.AreEqual(expected, match.Groups[1].Value);
+        }
+
+        [TestCase("left behind")]
+        [TestCase("leftover")]
+        [TestCase("upright")]
+        public void TrailingPosition_IgnoresPositionWordsNotAtTheEndOrInsideWords(string text)
+        {
+            Assert.IsFalse(DslGrammar.TrailingPosition.IsMatch(text));
+        }
+
+        [TestCase("Hi @greet_1", "greet_1")]
+        [TestCase("@first then text", "first")]
+        public void IdTag_ReadsStandaloneId(string text, string expected)
+        {
+            var match = DslGrammar.IdTag.Match(text);
+
+            Assert.IsTrue(match.Success);
+            Assert.AreEqual(expected, match.Groups[1].Value);
+        }
+
+        [TestCase("Mail bob@example.com")]
+        [TestCase("Price @5")]
+        public void IdTag_IgnoresEmailsAndNonIdentifiers(string text)
+        {
+            Assert.IsFalse(DslGrammar.IdTag.IsMatch(text));
+        }
+
         [Test]
         public void Keywords_CannotBeMutatedThroughACast()
         {

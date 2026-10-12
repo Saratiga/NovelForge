@@ -110,6 +110,30 @@ namespace NovelForge.Runtime.Tests
             Assert.IsFalse(registry.IsRegistered("notcmd"));
         }
 
+        public class OtherEchoCommand : Command
+        {
+            public OtherEchoCommand(string rawArgs)
+            {
+            }
+
+            public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
+            {
+                yield break;
+            }
+        }
+
+        [Test]
+        public void RegisterTypes_TwoCustomCommandsWithSameName_LogsErrorAndKeepsFirst()
+        {
+            var registry = new CommandRegistry();
+            LogAssert.Expect(LogType.Error, new Regex("'echo' on '.*OtherEchoCommand' is already registered"));
+
+            CommandRegistry.RegisterTypes(registry, new[] { ("echo", typeof(EchoCommand)), ("echo", typeof(OtherEchoCommand)) });
+
+            registry.TryCreate("echo", "x", out var command);
+            Assert.IsInstanceOf<EchoCommand>(command);
+        }
+
         [Test]
         public void RegisterTypes_OpenGenericType_LogsClearErrorAndSkips()
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using UnityEngine;
 
 namespace NovelForge.Runtime
@@ -62,7 +63,7 @@ namespace NovelForge.Runtime
         private static List<(string name, Func<string, Command> factory)> BuildFactories(
             IEnumerable<(string name, Type type)> candidates, IEnumerable<string> takenNames)
         {
-            ValidationCountForTesting++;
+            Interlocked.Increment(ref ValidationCountForTesting);
             var taken = new HashSet<string>(takenNames);
             var accepted = new List<(string name, Func<string, Command> factory)>();
 
@@ -124,7 +125,7 @@ namespace NovelForge.Runtime
 
         internal static IReadOnlyList<(string name, Type type)> ScanAssemblies(IEnumerable<Assembly> assemblies)
         {
-            ScanCountForTesting++;
+            Interlocked.Increment(ref ScanCountForTesting);
             Assembly runtimeAssembly = typeof(Command).Assembly;
             string runtimeName = runtimeAssembly.GetName().Name;
             var found = new List<(string name, Type type)>();
