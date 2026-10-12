@@ -36,16 +36,27 @@
 
 ## Из первого обзора, в планы не вошло
 
-- [ ] Возможный квадратичный перебор (поиск по списку внутри цикла):
+- [x] Возможный квадратичный перебор (поиск по списку внутри цикла):
   `GraphDocument.GetBrokenReferences`, `GraphDocument.GetUnreachableLabels`,
   `CharacterUsageValidator.Validate`, `DslAutocompleteProvider.GetCandidates`.
   Проверить и при необходимости заменить на `HashSet`/`Dictionary`.
-- [ ] Цикл вызовов из 11 методов в `NovelBranchGraphWindow` (`RebuildGraphView`,
+  Проверено: ложная тревога — везде уже `HashSet`, индексатор принял
+  `HashSet.Contains` за линейный поиск.
+- [x] Цикл вызовов из 11 методов в `NovelBranchGraphWindow` (`RebuildGraphView`,
   `ApplyNodes`, `ReplaceNode`, `On*Changed`, `AddNewLabel`, `DeleteNode`,
   `BranchGraphView.Populate` и др.). Проверить, не перестраивается ли весь граф на
   каждое нажатие клавиши.
-- [ ] Цикл вызовов `SaveLoadView.Refresh` ↔ `OnSlotClicked`. Проверить, нет ли лишних
+  Проверено: правки применяются по потере фокуса, не по клавише. Но текст блока и
+  вариантов выбора перестраивали граф и при потере фокуса без изменений — исправлено.
+- [x] Цикл вызовов `SaveLoadView.Refresh` ↔ `OnSlotClicked`. Проверить, нет ли лишних
   перерисовок.
+  Проверено: ложная тревога — один `Refresh` после сохранения, рекурсии нет.
+- [ ] Раскладка узлов окна графа хранится в `<скрипт>.nfgraph.meta` рядом со скриптом
+  (так решено в `docs/superpowers/specs/2026-09-12-editor-branch-graph-design.md`).
+  Unity принимает файл за `.meta` несуществующего ассета и при каждом Refresh пишет
+  ошибку «does not have a valid GUID». Нужно другое место: например, `userData`
+  импортёра скрипта, `Library/` или файл с расширением, которое Unity не трактует как
+  `.meta`. Найдено при написании тестов окна графа.
 
 ## Качество кода
 

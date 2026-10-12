@@ -25,6 +25,10 @@ namespace NovelForge.Editor
         private GraphDocument _document;
         private BranchGraphView _graphView;
 
+        internal GraphDocument Document => _document;
+        internal bool IsDirty => _isDirty;
+        internal int RebuildCountForTesting { get; private set; }
+
         [MenuItem("NovelForge/Branch Graph")]
         public static void ShowWindowFromMenu()
         {
@@ -55,7 +59,7 @@ namespace NovelForge.Editor
             window.Show();
         }
 
-        private void Load(string assetPath)
+        internal void Load(string assetPath)
         {
             _assetPath = assetPath;
             _text = File.ReadAllText(assetPath);
@@ -90,6 +94,7 @@ namespace NovelForge.Editor
         // alongside the graph on every rebuild.
         private void RebuildGraphView()
         {
+            RebuildCountForTesting++;
             rootVisualElement.Clear();
 
             var toolbar = new UnityEditor.UIElements.Toolbar();
@@ -132,6 +137,8 @@ namespace NovelForge.Editor
         internal void OnBodyFieldChanged(int nodeIndex, string newBody)
         {
             GraphNode node = _document.Nodes[nodeIndex];
+            if (newBody == node.Body)
+                return;
             ReplaceNode(nodeIndex, new GraphNode(node.LabelName, newBody, node.Choices,
                 node.TrailingJumpTarget, node.TrailingIsGosub, node.EndsInReturn, node.LeadingComment));
         }
@@ -139,8 +146,10 @@ namespace NovelForge.Editor
         internal void OnChoiceTextChanged(int nodeIndex, int choiceIndex, string newText)
         {
             GraphNode node = _document.Nodes[nodeIndex];
+            ChoiceOption old = node.Choices[choiceIndex];
+            if (newText == old.Text)
+                return;
             var newChoices = new List<ChoiceOption>(node.Choices);
-            ChoiceOption old = newChoices[choiceIndex];
             newChoices[choiceIndex] = new ChoiceOption(newText, old.ExplicitId, old.TargetLabel);
             ReplaceNode(nodeIndex, new GraphNode(node.LabelName, node.Body, newChoices,
                 node.TrailingJumpTarget, node.TrailingIsGosub, node.EndsInReturn, node.LeadingComment));
