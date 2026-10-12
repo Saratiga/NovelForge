@@ -15,8 +15,8 @@ namespace NovelForge.Editor.Tests
         {
             if (_window != null)
                 Object.DestroyImmediate(_window);
-            // The window writes its layout sidecar on close; remove it by hand because the
-            // AssetDatabase treats "*.nfgraph.meta" as an orphan .meta, not as a tracked file.
+            // A legacy "*.nfgraph.meta" sidecar is an orphan .meta to the AssetDatabase, not a
+            // tracked file, so it has to be removed by hand before deleting the folder.
             string folderOnDisk = Path.Combine(Application.dataPath, "Temp_NovelBranchGraphWindowTests");
             string layoutSidecar = Path.Combine(folderOnDisk, "graph.nfgraph.meta");
             if (File.Exists(layoutSidecar))
@@ -34,6 +34,34 @@ namespace NovelForge.Editor.Tests
             _window = ScriptableObject.CreateInstance<NovelBranchGraphWindow>();
             _window.Load(path);
             return _window;
+        }
+
+        private static string SidecarPath(string fileName) =>
+            Path.Combine(Application.dataPath, "Temp_NovelBranchGraphWindowTests", fileName);
+
+        [Test]
+        public void ClosingTheWindow_WritesLayoutAsJsonSidecar_NotAMetaFile()
+        {
+            OpenOn("label start\nAlice: hi\nreturn\n");
+
+            Object.DestroyImmediate(_window);
+            _window = null;
+
+            Assert.IsTrue(File.Exists(SidecarPath("graph.nfgraph.json")));
+            Assert.IsFalse(File.Exists(SidecarPath("graph.nfgraph.meta")));
+        }
+
+        [Test]
+        public void LegacyMetaSidecar_IsMovedToJsonOnLoad()
+        {
+            Directory.CreateDirectory(Path.Combine(Application.dataPath, "Temp_NovelBranchGraphWindowTests"));
+            File.WriteAllText(SidecarPath("graph.nfgraph.meta"), "{\"nodes\":[{\"label\":\"start\",\"x\":123.0,\"y\":45.0}]}");
+
+            OpenOn("label start\nAlice: hi\nreturn\n");
+
+            Assert.IsFalse(File.Exists(SidecarPath("graph.nfgraph.meta")));
+            Assert.IsTrue(File.Exists(SidecarPath("graph.nfgraph.json")));
+            StringAssert.Contains("123", File.ReadAllText(SidecarPath("graph.nfgraph.json")));
         }
 
         [Test]

@@ -268,8 +268,24 @@ namespace NovelForge.Editor
             UpdateTitle();
         }
 
-        private string LayoutFilePath =>
-            Path.Combine(Path.GetDirectoryName(_assetPath) ?? string.Empty, Path.GetFileNameWithoutExtension(_assetPath) + ".nfgraph.meta");
+        // A ".json" sidecar is an ordinary text asset to Unity. The old ".nfgraph.meta" name was
+        // read by the AssetDatabase as the .meta of a missing asset and logged a GUID error on
+        // every refresh; it is moved to the new name the first time the graph is opened.
+        private string LayoutFilePath => SidecarPath(".nfgraph.json");
+
+        private string LegacyLayoutFilePath => SidecarPath(".nfgraph.meta");
+
+        private string SidecarPath(string suffix) =>
+            Path.Combine(Path.GetDirectoryName(_assetPath) ?? string.Empty, Path.GetFileNameWithoutExtension(_assetPath) + suffix);
+
+        private void MigrateLegacyLayout()
+        {
+            if (!File.Exists(LegacyLayoutFilePath))
+                return;
+            if (!File.Exists(LayoutFilePath))
+                File.Copy(LegacyLayoutFilePath, LayoutFilePath);
+            File.Delete(LegacyLayoutFilePath);
+        }
 
         private void SaveLayout()
         {
@@ -291,6 +307,7 @@ namespace NovelForge.Editor
         private Dictionary<string, Vector2> LoadLayout()
         {
             var result = new Dictionary<string, Vector2>();
+            MigrateLegacyLayout();
             if (!File.Exists(LayoutFilePath))
                 return result;
 
