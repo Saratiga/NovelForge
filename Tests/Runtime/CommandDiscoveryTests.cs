@@ -44,6 +44,18 @@ namespace NovelForge.Runtime.Tests
             }
         }
 
+        public class GenericCommand<T> : Command
+        {
+            public GenericCommand(string rawArgs)
+            {
+            }
+
+            public override IEnumerator Execute(StoryContext context, IStoryPointer pointer)
+            {
+                yield break;
+            }
+        }
+
         public class ThrowingCommand : Command
         {
             public ThrowingCommand(string rawArgs) => throw new FormatException("bad speed");
@@ -96,6 +108,17 @@ namespace NovelForge.Runtime.Tests
             CommandRegistry.RegisterTypes(registry, new[] { ("notcmd", typeof(NotACommand)) });
 
             Assert.IsFalse(registry.IsRegistered("notcmd"));
+        }
+
+        [Test]
+        public void RegisterTypes_OpenGenericType_LogsClearErrorAndSkips()
+        {
+            var registry = new CommandRegistry();
+            LogAssert.Expect(LogType.Error, new Regex("GenericCommand.*open generic"));
+
+            CommandRegistry.RegisterTypes(registry, new[] { ("gen", typeof(GenericCommand<>)) });
+
+            Assert.IsFalse(registry.IsRegistered("gen"));
         }
 
         [Test]

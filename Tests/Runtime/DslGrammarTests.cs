@@ -46,6 +46,12 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void Keywords_CannotBeMutatedThroughACast()
+        {
+            Assert.IsNotInstanceOf<string[]>(DslGrammar.Keywords);
+        }
+
+        [Test]
         public void ChoiceOptionLine_Groups()
         {
             var match = DslGrammar.ChoiceOptionLine.Match("\"Go\" @go_id -> forest");

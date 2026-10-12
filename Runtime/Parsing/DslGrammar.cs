@@ -6,7 +6,7 @@ namespace NovelForge.Runtime
 {
     // Single source of truth for the DSL's lexical rules, shared by the runtime compiler
     // and every Editor tool that reads scripts (graph parser, highlighter, autocomplete).
-    public static class DslGrammar
+    internal static class DslGrammar
     {
         public const string Identifier = "[A-Za-z_][A-Za-z0-9_]*";
 
@@ -27,10 +27,10 @@ namespace NovelForge.Runtime
 
         private static readonly Regex IdentifierOnly = new($"^{Identifier}$", RegexOptions.Compiled);
 
-        public static readonly IReadOnlyList<string> Keywords = new[]
+        public static readonly IReadOnlyList<string> Keywords = Array.AsReadOnly(new[]
         {
             "label", "jump", "gosub", "set", "if", "return", "else", "endif", "choice",
-        };
+        });
 
         public static bool IsIdentifier(string text) => text != null && IdentifierOnly.IsMatch(text);
 

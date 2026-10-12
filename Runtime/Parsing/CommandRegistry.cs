@@ -19,7 +19,7 @@ namespace NovelForge.Runtime
         // Validated once per domain so a broken [NovelCommand] logs once, not on every
         // CreateDefault() (the script editor window calls it on every keystroke).
         private static readonly Lazy<IReadOnlyList<(string name, Func<string, Command> factory)>> DiscoveredFactories =
-            new(() => BuildFactories(ScanAssemblies(AppDomain.CurrentDomain.GetAssemblies()), BuiltinNames));
+            new(() => BuildFactories(ScanAssemblies(UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()), BuiltinNames));
 
         private readonly Dictionary<string, Func<string, Command>> _factories = new();
 
@@ -86,6 +86,11 @@ namespace NovelForge.Runtime
                 if (type.IsAbstract)
                 {
                     Debug.LogError($"NovelForge: [NovelCommand] type '{type.FullName}' is abstract — skipped.");
+                    continue;
+                }
+                if (type.ContainsGenericParameters)
+                {
+                    Debug.LogError($"NovelForge: [NovelCommand] type '{type.FullName}' is an open generic type — skipped.");
                     continue;
                 }
                 ConstructorInfo constructor = type.GetConstructor(new[] { typeof(string) });

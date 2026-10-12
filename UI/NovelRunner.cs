@@ -16,6 +16,10 @@ namespace NovelForge.UI
 
         public StoryContext Context { get; private set; }
         public PlaybackController Playback { get; private set; }
+        /// <summary>
+        /// Timing presenter handed to the next <see cref="Prepare"/>; set it before calling Prepare.
+        /// Null makes every <c>wait</c> command log an error and continue without waiting.
+        /// </summary>
         public ITimingPresenter Timing { get; set; } = new UnityTimingPresenter();
         public event Action OnFinished;
 

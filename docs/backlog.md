@@ -60,18 +60,18 @@
 
 ## Качество кода
 
-- [ ] Предупреждение анализатора Unity UAC0005 на `AppDomain.GetAssemblies()` в
+- [x] Предупреждение анализатора Unity UAC0005 на `AppDomain.GetAssemblies()` в
   `Runtime/Parsing/CommandRegistry.cs`: может вернуть выгруженные сборки. Unity советует
   `CurrentAssemblies.GetLoadedAssemblies()` или `TypeCache`.
-- [ ] Generic-класс с `[NovelCommand]` проходит проверку и падает при компиляции скрипта
+- [x] Generic-класс с `[NovelCommand]` проходит проверку и падает при компиляции скрипта
   с непонятным сообщением. Отклонять при `type.ContainsGenericParameters`.
-- [ ] `DslGrammar.Keywords` — массив, который можно изменить приведением к `string[]`.
+- [x] `DslGrammar.Keywords` — массив, который можно изменить приведением к `string[]`.
   Заменить на `Array.AsReadOnly(...)`.
-- [ ] `DslGrammar` целиком публичный в пакете версии 0.1.0. Можно сделать `internal` и
+- [x] `DslGrammar` целиком публичный в пакете версии 0.1.0. Можно сделать `internal` и
   добавить `InternalsVisibleTo("NovelForge.Editor")`.
-- [ ] Описать в комментарии, что `NovelRunner.Timing` читается только в `Prepare` и может
+- [x] Описать в комментарии, что `NovelRunner.Timing` читается только в `Prepare` и может
   быть `null` (тогда `wait` пишет ошибку и пропускается).
-- [ ] Описать в документации пакета, что сборки, загруженные после первого поиска
+- [x] Описать в документации пакета, что сборки, загруженные после первого поиска
   команд (например, через `Assembly.Load` во время игры), не учитываются. Сейчас это
   есть только в `USAGE.md`.
 
