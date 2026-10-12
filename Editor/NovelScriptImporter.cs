@@ -5,11 +5,15 @@ using NovelForge.Runtime;
 
 namespace NovelForge.Editor
 {
-    [ScriptedImporter(1, "nfscript")]
+    [ScriptedImporter(2, "nfscript")]
     public class NovelScriptImporter : ScriptedImporter
     {
+        internal static int ImportCountForTesting;
+
         public override void OnImportAsset(AssetImportContext ctx)
         {
+            ImportCountForTesting++;
+            ctx.DependsOnCustomDependency(NovelCommandDependency.Name);
             string source = File.ReadAllText(ctx.assetPath);
 
             try

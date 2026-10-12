@@ -21,10 +21,11 @@
   актёры и музыка остаются. Нужен `Clear()` у презентеров перед показом.
   Сделано: `ResetView()` у `ActorView`, `DialogueBoxView`, `DialoguePresenter`,
   `BackgroundPresenter`, `AudioPresenter`; `NovelRunner.Prepare` очищает экран.
-- [ ] `NovelScriptImporter` не зависит от набора команд. Если `.nfscript` импортирован
+- [x] `NovelScriptImporter` не зависит от набора команд. Если `.nfscript` импортирован
   раньше, чем появился класс команды, ошибка `Unknown command` висит до ручного
   Reimport. Решение: `ctx.DependsOnCustomDependency(...)` в импортёре и
   `AssetDatabase.RegisterCustomDependency(...)` с хешем имён команд в `[InitializeOnLoad]`.
+  Сделано: `Editor/NovelCommandDependency.cs`, импортёр версии 2.
 - [x] Позиции до первой метки хранятся как абсолютный номер команды
   (`NovelScript.ToPosition`). Правка в этой части скрипта молча сдвигает сохранение.
   Сохранение после конца истории (`{ null, Commands.Count }`) начнётся с середины, если
