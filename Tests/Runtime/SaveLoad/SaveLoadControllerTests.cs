@@ -247,6 +247,25 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
+        public void SaveTo_AfterPlaybackFinished_LoadsAsFinishedEvenIfScriptGrew()
+        {
+            const string original = "label a\nAlice: hi\n";
+            var storage = new JsonSaveStorage(_directory);
+            var savingContext = new StoryContext { Dialogue = new RecordingDialoguePresenter() };
+            var savingPlayback = new PlaybackController(new ScriptCompiler().Compile(original), savingContext);
+            CoroutineTestUtil.RunToCompletion(savingPlayback.RunAll());
+            Assert.IsTrue(savingPlayback.IsFinished);
+            new SaveLoadController(savingPlayback, savingContext, "test-script", storage).SaveTo("slot1");
+
+            var context = new StoryContext();
+            var playback = new PlaybackController(new ScriptCompiler().Compile(original + "Alice: epilogue\n"), context);
+            var result = new SaveLoadController(playback, context, "test-script", storage).LoadInto("slot1");
+
+            Assert.AreEqual(SaveLoadStatus.Success, result.Status);
+            Assert.IsTrue(playback.IsFinished);
+        }
+
+        [Test]
         public void SlotExists_DelegatesToStorage()
         {
             var storage = new JsonSaveStorage(_directory);

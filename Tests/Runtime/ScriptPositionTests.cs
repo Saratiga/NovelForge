@@ -37,9 +37,38 @@ namespace NovelForge.Runtime.Tests
         }
 
         [Test]
-        public void ToPosition_PastEnd_IsNullLabelWithCommandCount()
+        public void ToPosition_PastEnd_IsNullLabelWithFinishedSentinel()
         {
-            AssertPosition(null, 4, Compile(Src).ToPosition(int.MaxValue));
+            AssertPosition(null, int.MaxValue, Compile(Src).ToPosition(int.MaxValue));
+            AssertPosition(null, int.MaxValue, Compile(Src).ToPosition(4));
+        }
+
+        [Test]
+        public void TryResolve_FinishedSave_AfterScriptGrows_StaysFinished()
+        {
+            ScriptPosition finished = Compile(Src).ToPosition(4);
+            NovelScript grown = Compile(Src + "Alice: more\nAlice: and more\n");
+
+            Assert.IsTrue(grown.TryResolve(finished, out int resolved));
+            Assert.AreEqual(grown.Commands.Count, resolved);
+        }
+
+        [Test]
+        public void TryResolve_PreLabelOffsetPastFirstLabel_ResumesAtStartWithWarning()
+        {
+            LogAssert.Expect(LogType.Warning, new Regex("before the first label.*offset 2"));
+
+            Assert.IsTrue(Compile(Src).TryResolve(new ScriptPosition { Label = null, Offset = 2 }, out int resolved));
+            Assert.AreEqual(0, resolved);
+        }
+
+        [Test]
+        public void TryResolve_NoLabelsAtAll_OffsetInsideScriptResolves()
+        {
+            NovelScript script = Compile("Alice: one\nAlice: two\n");
+
+            Assert.IsTrue(script.TryResolve(new ScriptPosition { Label = null, Offset = 1 }, out int resolved));
+            Assert.AreEqual(1, resolved);
         }
 
         [Test]
