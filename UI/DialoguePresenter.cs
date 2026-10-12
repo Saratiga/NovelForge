@@ -89,6 +89,17 @@ namespace NovelForge.UI
             }
         }
 
+        public void ResetView()
+        {
+            foreach (var slot in positionSlots)
+            {
+                if (slot.view != null)
+                    slot.view.ResetView();
+            }
+            if (dialogueBox != null)
+                dialogueBox.ResetView();
+        }
+
         private bool TryFindSlot(string position, out ActorView view)
         {
             foreach (var slot in positionSlots)

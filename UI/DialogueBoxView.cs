@@ -22,6 +22,14 @@ namespace NovelForge.UI
                 AdvanceInput = new ButtonAdvanceInputSource(advanceButton);
         }
 
+        public void ResetView()
+        {
+            if (nameText != null)
+                nameText.text = string.Empty;
+            if (bodyText != null)
+                bodyText.text = string.Empty;
+        }
+
         public IEnumerator ShowText(string speakerName, Color nameColor, string text)
         {
             if (nameText == null || bodyText == null)

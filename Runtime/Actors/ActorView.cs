@@ -37,6 +37,14 @@ namespace NovelForge.Runtime
             SetAlpha(1f);
         }
 
+        public void ResetView()
+        {
+            if (spriteRenderer == null)
+                return;
+            spriteRenderer.sprite = null;
+            SetAlpha(0f);
+        }
+
         private void SetAlpha(float alpha)
         {
             var color = spriteRenderer.color;

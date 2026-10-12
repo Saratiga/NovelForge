@@ -165,5 +165,27 @@ namespace NovelForge.UI.Tests
             Assert.DoesNotThrow(() => runner.Prepare());
             Assert.IsNull(runner.Playback);
         }
+
+        [Test]
+        public void Prepare_ClearsWhatThePreviousRunLeftOnScreen()
+        {
+            NovelRunner runner = CreateRunner();
+            runner.script = CreateScriptAsset("label start\nreturn\n");
+            var cgSlot = new GameObject("CgSlot").AddComponent<SpriteRenderer>();
+            try
+            {
+                cgSlot.sprite = Sprite.Create(new Texture2D(4, 4), new Rect(0, 0, 4, 4), Vector2.zero);
+                runner.backgrounds.cgSlot = cgSlot;
+
+                runner.Prepare();
+
+                Assert.IsNull(cgSlot.sprite);
+                Assert.AreEqual(0f, cgSlot.color.a, 0.001f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(cgSlot.gameObject);
+            }
+        }
     }
 }

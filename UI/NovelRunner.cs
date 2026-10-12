@@ -24,6 +24,12 @@ namespace NovelForge.UI
             Context = null;
             Playback = null;
 
+            // A new run (new game or a load) starts from an empty screen; the load path then
+            // replays the saved scene on top of it.
+            if (dialogue != null) dialogue.ResetView();
+            if (backgrounds != null) backgrounds.ResetView();
+            if (audio != null) audio.ResetView();
+
             NovelScriptAsset target = scriptToPlay != null ? scriptToPlay : script;
             if (target == null)
             {

@@ -100,6 +100,23 @@ namespace NovelForge.Runtime
             _busySfxSources.Remove(source);
         }
 
+        public void ResetView()
+        {
+            _musicFadeGeneration++;
+            _activeMusicSource = null;
+            foreach (var source in new[] { musicSourceA, musicSourceB })
+            {
+                if (source == null)
+                    continue;
+                source.Stop();
+                source.clip = null;
+                source.volume = 1f;
+            }
+            foreach (var voice in _sfxPool)
+                voice.Stop();
+            _busySfxSources.Clear();
+        }
+
         private AudioSource AcquireSfxVoice()
         {
             foreach (var source in _sfxPool)

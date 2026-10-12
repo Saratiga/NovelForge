@@ -105,6 +105,20 @@ namespace NovelForge.Runtime
             SetAlpha(cgSlot, 1f);
         }
 
+        public void ResetView()
+        {
+            // Bumping the generation stops any fade still in flight from writing over the reset.
+            _backgroundFadeGeneration++;
+            _activeBackgroundSlot = null;
+            foreach (var slot in new[] { backgroundSlotA, backgroundSlotB, cgSlot })
+            {
+                if (slot == null)
+                    continue;
+                slot.sprite = null;
+                SetAlpha(slot, 0f);
+            }
+        }
+
         private static void SetAlpha(SpriteRenderer renderer, float alpha)
         {
             var color = renderer.color;

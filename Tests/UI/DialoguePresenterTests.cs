@@ -249,5 +249,21 @@ namespace NovelForge.UI.Tests
             Assert.AreEqual("Alice", dialogueBox.nameText.text);
             Assert.AreEqual("Как дела?", dialogueBox.bodyText.text);
         }
+
+        [Test]
+        public void ResetView_HidesActorsAndClearsDialogueBox()
+        {
+            var dialogueBox = CreateDialogueBox();
+            var actorView = CreateActorView();
+            var presenter = CreatePresenter(CreateLibrary(), dialogueBox, actorView);
+            CoroutineTestUtil.RunToCompletion(presenter.ShowLine("alice", "Hello!", "happy", "left"));
+
+            presenter.ResetView();
+
+            Assert.IsNull(actorView.spriteRenderer.sprite);
+            Assert.AreEqual(0f, actorView.spriteRenderer.color.a, 0.001f);
+            Assert.AreEqual(string.Empty, dialogueBox.nameText.text);
+            Assert.AreEqual(string.Empty, dialogueBox.bodyText.text);
+        }
     }
 }

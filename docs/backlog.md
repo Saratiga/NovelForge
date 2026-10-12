@@ -16,9 +16,11 @@
 
 ## Заметные проблемы
 
-- [ ] Повторный показ сцены при загрузке только добавляет на экран
+- [x] Повторный показ сцены при загрузке только добавляет на экран
   (`SceneState.Replay`). Если в той же сессии загрузить другое сохранение, старые
   актёры и музыка остаются. Нужен `Clear()` у презентеров перед показом.
+  Сделано: `ResetView()` у `ActorView`, `DialogueBoxView`, `DialoguePresenter`,
+  `BackgroundPresenter`, `AudioPresenter`; `NovelRunner.Prepare` очищает экран.
 - [ ] `NovelScriptImporter` не зависит от набора команд. Если `.nfscript` импортирован
   раньше, чем появился класс команды, ошибка `Unknown command` висит до ручного
   Reimport. Решение: `ctx.DependsOnCustomDependency(...)` в импортёре и
