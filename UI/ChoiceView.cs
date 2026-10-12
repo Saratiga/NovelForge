@@ -11,6 +11,19 @@ namespace NovelForge.UI
     {
         [SerializeField] internal Button[] optionButtons;
 
+        public void ResetView()
+        {
+            if (optionButtons == null)
+                return;
+            foreach (Button button in optionButtons)
+            {
+                if (button == null)
+                    continue;
+                button.onClick.RemoveAllListeners();
+                button.gameObject.SetActive(false);
+            }
+        }
+
         public IEnumerator PresentChoices(IReadOnlyList<string> optionTexts, Action<int> onSelected)
         {
             if (optionButtons == null || optionButtons.Length == 0)

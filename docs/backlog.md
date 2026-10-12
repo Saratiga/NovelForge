@@ -75,6 +75,23 @@
   команд (например, через `Assembly.Load` во время игры), не учитываются. Сейчас это
   есть только в `USAGE.md`.
 
+## Из ревью ветки исправлений бэклога (2026-10-12)
+
+- [ ] `Editor/NovelCommandDependency.cs`: `[InitializeOnLoad]` выполняется и в процессах
+  Asset Import Worker, где `SessionState` пуст, — каждый такой процесс регистрирует
+  зависимость и ставит `AssetDatabase.Refresh`. Выходить раньше при
+  `AssetDatabase.IsAssetImportWorkerProcess()`. Не проверено на практике.
+- [ ] `AudioPresenter.ResetView` и `OnDisable` вызывают `voice.Stop()` без проверки на
+  `null`: если голос sfx уничтожили, `Prepare` упадёт с `MissingReferenceException`.
+- [ ] `AudioPresenter.ResetView` очищает `_busySfxSources`, пока старый `PlaySfx` может
+  ещё идти; сейчас это безопасно только потому, что `Prepare` сначала останавливает
+  корутины. Для самостоятельного `ResetView` нужен счётчик поколений у sfx.
+- [ ] `NovelScriptImporterTests.ChangingTheCommandSet_ReimportsScripts` переимпортирует все
+  `.nfscript` проекта-хоста: в проекте пользователя со скриптами с ошибками тест упадёт
+  на чужих логах ошибок.
+- [ ] Остановка идущего воспроизведения в `NovelRunner.Prepare` (`StopAllCoroutines`) не
+  покрыта тестом: в EditMode корутины `MonoBehaviour` не продвигаются. Нужен PlayMode-тест.
+
 ## Недостающие тесты
 
 - [x] Полный цикл парсинг → сериализация в `GraphDocumentParser`/`GraphDocumentFormatter`

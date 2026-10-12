@@ -44,6 +44,23 @@ namespace NovelForge.UI.Tests
         }
 
         [Test]
+        public void ResetView_HidesButtonsAndDetachesTheWaitingChoice()
+        {
+            var view = CreateView(2);
+            int picked = -1;
+            var routine = view.PresentChoices(new[] { "A", "B" }, i => picked = i);
+            routine.MoveNext();
+
+            view.ResetView();
+            view.optionButtons[0].onClick.Invoke();
+
+            Assert.IsFalse(view.optionButtons[0].gameObject.activeSelf);
+            Assert.IsFalse(view.optionButtons[1].gameObject.activeSelf);
+            Assert.IsTrue(routine.MoveNext(), "the old choice must still be waiting, not resolved by a click after reset");
+            Assert.AreEqual(-1, picked);
+        }
+
+        [Test]
         public void PresentChoices_ShowsButtonsWithLabels_HidesUnused()
         {
             var view = CreateView(3);

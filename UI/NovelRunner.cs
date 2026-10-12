@@ -25,11 +25,15 @@ namespace NovelForge.UI
 
         public void Prepare(NovelScriptAsset scriptToPlay = null)
         {
+            // A run still in progress (restart or load mid-story) must not keep drawing over
+            // the new one or waiting on its choice buttons.
+            StopAllCoroutines();
             Context = null;
             Playback = null;
 
             // A new run (new game or a load) starts from an empty screen; the load path then
             // replays the saved scene on top of it.
+            if (choices != null) choices.ResetView();
             if (dialogue != null) dialogue.ResetView();
             if (backgrounds != null) backgrounds.ResetView();
             if (audio != null) audio.ResetView();

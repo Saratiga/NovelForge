@@ -167,6 +167,27 @@ namespace NovelForge.UI.Tests
         }
 
         [Test]
+        public void Prepare_HidesChoiceButtonsLeftByThePreviousRun()
+        {
+            NovelRunner runner = CreateRunner();
+            runner.script = CreateScriptAsset("label start\nreturn\n");
+            var button = new GameObject("Option").AddComponent<UnityEngine.UI.Button>();
+            try
+            {
+                runner.choices.optionButtons = new[] { button };
+                button.gameObject.SetActive(true);
+
+                runner.Prepare();
+
+                Assert.IsFalse(button.gameObject.activeSelf);
+            }
+            finally
+            {
+                Object.DestroyImmediate(button.gameObject);
+            }
+        }
+
+        [Test]
         public void Prepare_ClearsWhatThePreviousRunLeftOnScreen()
         {
             NovelRunner runner = CreateRunner();
