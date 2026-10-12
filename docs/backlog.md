@@ -13,10 +13,17 @@
   демо и проходит запуск → сохранение → перезапуск посреди истории → загрузку на живых
   кадрах (`unity test --mode PlayMode`). Сами UI-кнопки демо и визуальное мерцание тест
   не проверяет.
-- [ ] Собрать IL2CPP-билд со stripping Low или выше и проверить свою команду. Классы
+- [x] Собрать IL2CPP-билд со stripping Low или выше и проверить свою команду. Классы
   команд используются только через рефлексию и могут вырезаться — тогда в билде будет
   `Unknown command`. Если подтвердится: наследовать `NovelCommandAttribute` от
   `PreserveAttribute` или требовать `[Preserve]` на классах команд.
+  Проверено и исправлено: в Windows IL2CPP-билде со stripping High класс команды
+  сохранялся, но конструктор `(string rawArgs)` вырезался — команда становилась
+  `Unknown command`. Теперь `Editor/NovelCommandLinkXml.cs` (`IUnityLinkerProcessor`)
+  генерирует `link.xml`, сохраняющий все классы с `[NovelCommand]`. Проверка повторяема:
+  `TestProject~/Assets/Il2CppSmoke` — `unity build TestProject~ --target StandaloneWindows64
+  --execute-method NovelForgeSmoke.BuildSmoke.Build --output-path <exe>`, затем запустить
+  exe с `-batchmode -nographics -logFile <log>` и найти в логе `NOVELFORGE_SMOKE PASS`.
 
 ## Заметные проблемы
 
