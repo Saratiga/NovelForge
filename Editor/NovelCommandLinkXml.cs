@@ -27,7 +27,8 @@ namespace NovelForge.Editor
                 .OrderBy(group => group.Key, StringComparer.Ordinal);
             foreach (IGrouping<string, Type> assembly in byAssembly)
             {
-                xml.Append("  <assembly fullname=\"").Append(assembly.Key).Append("\">\n");
+                // TypeCache also sees Editor-only and test assemblies, which never reach the player.
+                xml.Append("  <assembly fullname=\"").Append(assembly.Key).Append("\" ignoreIfMissing=\"1\">\n");
                 foreach (Type type in assembly.OrderBy(t => t.FullName, StringComparer.Ordinal))
                     xml.Append("    <type fullname=\"").Append(type.FullName.Replace('+', '/')).Append("\" preserve=\"all\" />\n");
                 xml.Append("  </assembly>\n");
